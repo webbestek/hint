@@ -16,3 +16,13 @@
 - More hints across categories (general, system, network, dns, web, security, devops, git, docker, node, php, hacker, ai).
 - Context engine: auto-suggests commands based on the current directory (Git, package.json, composer.json, docker-compose, Makefile, .env).
 - New: optional `enable-insert-binding.sh` that binds Alt-h to open the interactive palette and insert the chosen command into the current prompt.
+
+## 1.2.0 — 2025-11-07
+- UI: colorful, clearer output for normal mode and a new `--beginner` mode that explains "What it does" and "How to use".
+- FZF preview (unchanged) complements the friendlier display; insert-binding still optional.
+- Docs: README updated to include Beginner mode.
+
+## 1.2.1 — 2025-11-07
+- SonarCloud: added `sonar.yml` workflow to analyze `development` branch and PRs.
+- Added `sonar-project.properties` (project key `webbestek_hint`, org `webbestek`).
+- README: SonarCloud badges and setup notes.

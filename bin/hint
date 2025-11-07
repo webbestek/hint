@@ -31,6 +31,13 @@ bold(){ is_tty && tput bold || true; }
 dim(){ is_tty && tput dim || true; }
 sg(){ is_tty && tput sgr0 || true; }
 grey(){ is_tty && tput setaf 8 || true; }
+# color palette (fallback to no color if not a TTY)
+c_red(){ is_tty && tput setaf 1 || true; }
+c_green(){ is_tty && tput setaf 2 || true; }
+c_yellow(){ is_tty && tput setaf 3 || true; }
+c_blue(){ is_tty && tput setaf 4 || true; }
+c_magenta(){ is_tty && tput setaf 5 || true; }
+c_cyan(){ is_tty && tput setaf 6 || true; }
 hr(){ printf "%s" "$(grey)────────────────────────────────────────────────────────$(sg)"; }
 
 teach_tip(){
@@ -134,6 +141,67 @@ fzf_menu(){
   fi
 }
 
+
+print_compact(){
+  local all="$1"
+  echo
+  printf "%s%sHINTS%s  %s(type 'hint i' for interactive)%s
+" "$(c_cyan)" "$(bold)" "$(sg)" "$(dim)" "$(sg)"
+  hr; echo
+  echo "$all" | awk -F'	' '{
+    cat=$1; label=$2; cmd=$3; why=$4;
+    gsub(//,"",cat); gsub(//,"",label); gsub(//,"",cmd); gsub(//,"",why);
+    if (!seen[cat]++) { order[++n]=cat }
+    lines[cat]=lines[cat] sprintf("%s  • %-28s%s  %s%s%s
+", "", label, "", cmd, (why? "  — ":""), why)
+  } END {
+    for (i=1;i<=n;i++) {
+      c=order[i];
+      printf("
+%s[%s]%s
+", "[36m[1m", c, "[0m"); # cyan bold
+      printf("%s", lines[c]);
+    }
+  }'
+  echo
+  printf "%sTip:%s %sRun the command as shown. Edit anything in <angle brackets> first.%s
+" "$(c_yellow)" "$(sg)" "$(dim)" "$(sg)"
+  echo
+}
+
+print_beginner(){
+  local all="$1"
+  echo
+  printf "%s%sHINTS (Beginner Mode)%s  %s(type 'hint i' for interactive)%s
+" "$(c_green)" "$(bold)" "$(sg)" "$(dim)" "$(sg)"
+  hr; echo
+  echo "$all" | awk -F'	' '{
+    cat=$1; label=$2; cmd=$3; why=$4;
+    gsub(//,"",cat); gsub(//,"",label); gsub(//,"",cmd); gsub(//,"",why);
+    if (!seen[cat]++) { order[++n]=cat }
+    block[cat]=block[cat] \
+      sprintf("
+  • %s
+    %sWhat it does:%s %s
+    %sHow to use:%s  Copy and paste this command, then press Enter.
+    %sCommand:%s   %s
+", \
+              label, "[1m", "[0m", (why?why:"No description yet"), "[1m", "[0m", "[1m", "[0m", cmd);
+  } END {
+    for (i=1;i<=n;i++) {
+      c=order[i];
+      printf("
+%s[%s]%s
+", "[34m[1m", c, "[0m"); # blue bold
+      printf("%s
+", block[c]);
+    }
+  }'
+  echo
+  printf "%sReminder:%s If you see <like-this>, replace it with your value before running.
+" "$(c_yellow)" "$(sg)"
+  echo
+}
 doctor(){
   printf "hint doctor — inspecting environment\n"
   case ":$PATH:" in *":$HOME/.local/bin:"*) echo "✅ PATH has ~/.local/bin" ;; *)
@@ -156,6 +224,8 @@ debug_dump(){
 }
 
 case "${1:-}" in
+  --beginner) ALL="$(collect_hints)"; print_beginner "$ALL" ;;
+
   --doctor) doctor ;;
   --debug) debug_dump ;;
   i|interactive) ALL="$(collect_hints)"; fzf_menu "$ALL" ;;

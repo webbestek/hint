@@ -135,3 +135,31 @@ Disable it again:
 ~/.local/share/hint/scripts/disable-insert-binding.sh
 source ~/.bashrc
 ```
+
+
+## Beginner mode (more readable & friendly)
+
+Show colorful, beginner-friendly output with simple explanations and a clear "How to use" line:
+
+```bash
+hint --beginner
+```
+
+Use the interactive picker for the same audience:
+```bash
+hint i
+# pick a line -> it prints the command OR (if you enabled insert-binding) pastes it into your prompt
+```
+
+
+## Code Quality (SonarCloud)
+
+[![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=webbestek_hint&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=webbestek_hint)
+[![Maintainability Rating](https://sonarcloud.io/api/project_badges/measure?project=webbestek_hint&metric=sqale_rating)](https://sonarcloud.io/summary/new_code?id=webbestek_hint)
+[![Reliability Rating](https://sonarcloud.io/api/project_badges/measure?project=webbestek_hint&metric=reliability_rating)](https://sonarcloud.io/summary/new_code?id=webbestek_hint)
+
+### Setup
+1. In GitHub: **Settings → Secrets and variables → Actions** → add secret `SONAR_TOKEN` with your SonarCloud token.
+2. Ensure `sonar-project.properties` exists at repo root (already included).
+3. Push to the `development` branch or open a PR — the **SonarCloud** workflow runs automatically.
+
