@@ -1,21 +1,34 @@
 # Development
 
-## Live symlink (recommended)
+## Quick dev setup
+
 ```bash
-git clone git@github.com:kevin4hrens/hint.git ~/Projects/hint
+git clone https://github.com/webbestek/hint.git ~/Projects/hint
 ~/Projects/hint/scripts/dev-install.sh
 source ~/.bashrc
 ```
 
-## Common tasks
-```bash
-~/.local/share/hint/scripts/doctor.sh
-~/.local/share/hint/scripts/fix-perms.sh
-```
+The dev installer symlinks your repo to `~/.local/share/hint` and links the binaries.
+Edits in your clone affect `hint` immediately.
 
-## Adding hints
-Add `.sh` files under a category in `hint/`. Each script should print TAB-separated lines:
-```bash
-printf "DNS\tTrace\tdig +trace example.com\tFull resolution path\n"
-```
-Keep scripts fast; avoid long loops and external network calls on startup.
+## Project layout
+
+See **STRUCTURE.md** for a full map. In short:
+- `bin/` → executables (`hint`, `sysline`)
+- `hint/` → categories that print TAB‑separated lines
+- `scripts/` → installers, diagnostics, optional keybinding
+- `docs/` → detailed docs
+- `.github/` → CI and templates
+
+## Commit and PR guidelines
+
+- Keep changes small and descriptive.
+- Run `scripts/fix-perms.sh` (ensures `+x`) and ShellCheck.
+- Update docs for visible behavior changes.
+- Add testing notes to the PR body.
+
+## Release checklist (maintainers)
+
+- Update `VERSION` and `CHANGELOG.md`
+- Tag: `git tag -a vX.Y.Z -m "hint X.Y.Z"` and push with `--tags`
+- Verify Actions built and published artifacts

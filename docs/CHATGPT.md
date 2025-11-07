@@ -1,9 +1,8 @@
-# ChatGPT Guide
+# ChatGPT
 
-When asking for changes, include:
-1) goal and constraints (pure Bash, fast, shellcheck-clean)
-2) the file contents to edit
-3) expected output (full file with changes applied, no commentary)
+When requesting edits, provide:
+- the **file path**
+- the **exact block** to change
+- the **expected full result**
 
-Example format for hints (TAB-separated):
-`CATEGORY<TAB>LABEL<TAB>COMMAND<TAB>WHY`
+Ask for the **final file** only, no commentary. Then run ShellCheck and tests.

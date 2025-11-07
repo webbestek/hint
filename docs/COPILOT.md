@@ -1,14 +1,4 @@
-# GitHub Copilot Guide
+# GitHub Copilot
 
-**Project**: hint — Starship-only command palette (Bash).
-**Principles**: Fast startup, ShellCheck-clean, no network calls, safe-by-default hints.
-
-## Good tasks for Copilot
-- Add small hint scripts to `hint/<category>/`.
-- Refactor helper functions in `bin/hint` (no behavior change).
-- Write utility scripts under `scripts/` (not on hot path).
-
-## PR checklist
-- `scripts/fix-perms.sh` ran
-- ShellCheck passes
-- Docs updated as needed
+Use Copilot for small, focused changes. Keep prompts specific (“add a hint”, “tighten quoting”).  
+Always run ShellCheck and re‑read generated Bash for safety and clarity.

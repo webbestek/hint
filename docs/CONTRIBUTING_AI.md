@@ -1,12 +1,20 @@
-# Contributing with AI
+# Contributing with AI tools (Copilot, ChatGPT, Cursor)
 
-We support AI-assisted contributions if the code remains readable and safe.
+We welcome AI‑assisted contributions with a few simple rules:
 
-## Do
-- Keep runtime Bash fast and ShellCheck-clean
-- Add hints in the correct category under `hint/`
-- Update docs when behavior changes
+- Output must be **readable** and **explainable** by a human reviewer.
+- Keep the runtime fast; avoid heavy loops and network calls on startup.
+- Shell scripts must pass ShellCheck.
+- Hint files **must only print** TAB‑separated lines. No execution.
 
-## Don't
-- Add network calls or destructive commands
-- Introduce long loops or subshell storms on startup
+## Good prompts
+
+- “Add three safe DNS hints in `hint/dns/core.sh` using the TAB‑separated format.”
+- “Refactor `bin/hint` to keep colors out of awk and explain the change.”
+
+## PR checklist
+
+- [ ] `scripts/fix-perms.sh` ran
+- [ ] `hint --doctor` succeeds locally
+- [ ] ShellCheck clean for changed files
+- [ ] Docs updated if behavior changed

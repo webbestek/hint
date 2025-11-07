@@ -3,38 +3,44 @@
 ```
 bin/                 # Runtime executables
   hint               # The command palette (dynamic path)
-  sysline            # Starship line (username, load, RAM, disk, battery)
+  sysline            # Small system status line for the prompt
 
 hint/                # Categories (each script prints TAB-separated lines)
-  general/           # Everyday commands
-  system/            # OS info, resources, services
-  network/           # Connectivity & diagnostics
-  dns/               # DNS lookups and tracing
-  web/               # HTTP, servers, ports
-  security/          # ufw, fail2ban, openssl checks
-  devops/            # journalctl, systemctl, logs
-  git/               # Git workflow
-  docker/            # Docker and Compose
-  node/              # Node/NPM
-  php/               # Composer/PHP
-  hacker/            # Advanced debugging
-  ai/                # Text helpers
+  general/
+  system/
+  network/
+  dns/
+  web/
+  security/
+  devops/
+  git/
+  docker/
+  node/
+  php/
+  hacker/
+  ai/
 
-scripts/             # Installer and tooling
+scripts/
   install.sh         # Copy install (user scope)
   dev-install.sh     # Symlink install (dev scope)
-  doctor.sh          # Environment diagnostics
-  fix-perms.sh       # Ensure +x bits
+  enable-insert-binding.sh
+  disable-insert-binding.sh
+  doctor.sh
+  fix-perms.sh
+
+docs/
+  USAGE.md
+  DEVELOPMENT.md
 
 man/
   man1/hint.1        # Man page
 
-docs/
-  USAGE.md           # Usage details
-  DEVELOPMENT.md     # Contributor workflow
-
+CONTRIBUTING.md
+CODE_OF_CONDUCT.md
+SECURITY.md
+SUPPORT.md
 README.md
 STRUCTURE.md
+LICENSE
 CHANGELOG.md
-VERSION
 ```

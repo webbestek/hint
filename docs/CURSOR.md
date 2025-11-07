@@ -1,6 +1,7 @@
-# Cursor Guide
+# Cursor
 
-Use `.cursorrules` as the base. Keep edits small and testable.
-- Prefer inline edits
-- Avoid adding heavy deps
-- Run: `scripts/fix-perms.sh` and `hint --doctor`
+Cursor’s Chat works well for quick iterations. Keep diffs small and test locally:
+- `scripts/fix-perms.sh`
+- `hint --doctor`
+- `hint`
+- `hint i`
