@@ -1,0 +1,7 @@
+# Cursor Rules for the “hint” repo
+
+- Runtime code (bin/, hint/) must be Bash and fast; avoid network calls and heavy loops.
+- Emit hints as TAB-separated lines: CATEGORY<TAB>LABEL<TAB>COMMAND<TAB>WHY
+- Prefer pipelines to loops; avoid Useless Use of Cat (UUOC).
+- Keep changes small; preserve behavior unless explicitly asked.
+- After edits, run: make lint && ./scripts/fix-perms.sh

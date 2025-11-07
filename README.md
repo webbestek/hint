@@ -26,14 +26,14 @@ source ~/.bashrc
 
 ### 2) .deb package (Ubuntu/Pop!_OS)
 ```bash
-wget https://github.com/kevin4hrens/hint/releases/download/v0.3.0/hint_0.6.0_amd64.deb
-sudo apt install ./hint_0.6.0_amd64.deb
+wget https://github.com/kevin4hrens/hint/releases/download/v0.3.0/hint_0.7.0_amd64.deb
+sudo apt install ./hint_0.7.0_amd64.deb
 ```
 
 ### 3) Tarball
 ```bash
-wget https://github.com/kevin4hrens/hint/releases/download/v0.3.0/hint-0.6.0.tar.gz
-tar -xzf hint-0.6.0.tar.gz -C ~/.local/share/
+wget https://github.com/kevin4hrens/hint/releases/download/v0.3.0/hint-0.7.0.tar.gz
+tar -xzf hint-0.7.0.tar.gz -C ~/.local/share/
 ~/.local/share/hint/scripts/install.sh
 ```
 
@@ -122,13 +122,13 @@ rm -f ~/.local/bin/hint ~/.local/bin/sysline
      ```
    - `.deb` (Ubuntu/Pop!_OS):  
      ```bash
-     wget https://github.com/kevin4hrens/hint/releases/download/v0.4.0/hint_0.6.0_amd64.deb
-     sudo apt install ./hint_0.6.0_amd64.deb
+     wget https://github.com/kevin4hrens/hint/releases/download/v0.4.0/hint_0.7.0_amd64.deb
+     sudo apt install ./hint_0.7.0_amd64.deb
      ```
    - Tarball:  
      ```bash
-     wget https://github.com/kevin4hrens/hint/releases/download/v0.4.0/hint-0.6.0.tar.gz
-     tar -xzf hint-0.6.0.tar.gz -C ~/.local/share/
+     wget https://github.com/kevin4hrens/hint/releases/download/v0.4.0/hint-0.7.0.tar.gz
+     tar -xzf hint-0.7.0.tar.gz -C ~/.local/share/
      ~/.local/share/hint/scripts/install.sh
      source ~/.bashrc
      ```
@@ -242,4 +242,47 @@ or:
 ```bash
 make fix-perms
 ```
+
+
+
+## 🤖 Using AI Assistants (Copilot, ChatGPT, Cursor)
+
+Short version: **be explicit** about goals and constraints; ask for small, testable diffs.
+
+### GitHub Copilot (Chat, in repo or editor)
+- Open Copilot Chat and paste:
+  > Project: hint — Starship-only interactive command palette.  
+  > Coding rules: Bash-only for runtime; fast startup; zero network calls; safe-by-default commands; lines formatted as `CATEGORY<TAB>LABEL<TAB>COMMAND<TAB>WHY`.  
+  > Tasks: write a new hint script under `hint/<category>/...`, or refactor `bin/hint` without changing behavior.  
+  > Constraints: keep scripts idempotent and sub-100ms; use `shellcheck`-clean code; respect optional `~/.config/hint/custom.sh`.
+- Ask Copilot to draft changes **in a new branch** and propose a PR with a one-paragraph rationale.
+- Use our PR template checklist when submitting.
+
+### ChatGPT (paste-in workflow)
+When you want ChatGPT to help, provide:
+1. The **goal**, **context**, and **constraints** (same bullets as above).  
+2. The **target file contents** that should be edited.  
+3. What great looks like (e.g., “single file, pure Bash, ≤40 lines, shellcheck-clean”).
+
+Suggested starter prompt (copy/paste):
+```
+You are helping on the repo “hint” (Starship-only command palette).
+Write or modify Bash scripts that are fast and shellcheck-clean.
+Do not add network calls. Hints must print TAB-separated lines:
+CATEGORY<TAB>LABEL<TAB>COMMAND<TAB>WHY
+
+Task: <describe your task>
+Target file: <path/to/file>
+Return: full file content only, with minimal diff and comments removed.
+```
+
+### Cursor
+- Add `.cursorrules` (included) to guide Cursor’s inline edits.
+- Use “Ask Cursor” with the same goals and constraints; prefer **small edits** and **preview diffs**.
+- Keep runtime files in `bin/` and `hint/` Bash-only; heavy logic belongs in scripts under `scripts/` (not on hot path).
+
+### Quality gates (for any AI-generated change)
+- Run: `make lint` (ShellCheck), then `./scripts/fix-perms.sh`.
+- Dry run: `hint --all` and `hint i`. No errors; startup stays snappy.
+- Add/Update docs if you changed behavior.
 

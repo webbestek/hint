@@ -18,3 +18,7 @@
 - UI: sysline shows **username only** (removed @hostname), consistent separators, refined hint suffix (“✧ type hint”).
 - New: `scripts/fix-perms.sh` and `make fix-perms` to repair executable bits.
 - CI: permissions check step surfaces missing +x in PRs.
+## 0.7.0 — 2025-11-07
+- Docs: Added AI assistant guides — **COPILOT.md**, **CHATGPT.md**, **CONTRIBUTING_AI.md** and a project-wide **.cursorrules**.
+- README: New section “Using AI Assistants (Copilot, ChatGPT, Cursor)” with ready-to-use prompts and guardrails.
+- Version bump for public release.
