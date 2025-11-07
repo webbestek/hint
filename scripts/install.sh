@@ -28,9 +28,7 @@ if ! grep -q 'export PATH="$HOME/.local/bin:$PATH"' "$HOME/.bashrc" 2>/dev/null;
   echo 'export PATH="$HOME/.local/bin:$PATH"' >> "$HOME/.bashrc"
 fi
 
-mkdir -p "$HOME/.config/hint"
-[[ -f "$HOME/.config/hint/custom.sh" ]] || cp "$HINT_DST/config/custom.sh" "$HOME/.config/hint/custom.sh"
-echo "Personal hints file ensured at $HOME/.config/hint/custom.sh (edit to add your own tips)."
+# Do NOT auto-create ~/.config/hint/custom.sh; it's optional by design.
 
 if ! grep -q 'bind -x.*hint i' "$HOME/.bashrc" 2>/dev/null; then
   echo 'bind -x "\\C-h": "hint i"' >> "$HOME/.bashrc"

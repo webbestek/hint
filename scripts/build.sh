@@ -5,7 +5,7 @@ ROOT="$(cd "$(dirname "{BASH_SOURCE[0]}")/.." && pwd)"
 DIST="$ROOT/dist"
 mkdir -p "$DIST"
 
-VERSION="${VERSION:-0.2.0}"
+VERSION="${VERSION:-0.3.0}"
 echo "Building hint version: $VERSION"
 
 TARBALL="$DIST/hint-$VERSION.tar.gz"
