@@ -1,15 +1,10 @@
 #!/usr/bin/env bash
-# hint — Starship-ready command palette (dynamic-path runtime)
-# v1.0.0 — Clean, fast, and safe by default.
-
 set -euo pipefail
 
-fail() { printf "hint: %s\n" "$*" >&2; exit 1; }
-on_err() { rc=$?; printf "hint: something went wrong (exit %s). Try: hint --doctor\n" "$rc" >&2; exit "$rc"; }
+on_err(){ rc=$?; printf "hint: error (exit %s). Try: hint --doctor\n" "$rc" >&2; exit "$rc"; }
 trap on_err ERR
 
-# Resolve runtime root based on this script's path (works via symlink)
-resolve_root() {
+resolve_root(){
   local src="${BASH_SOURCE[0]}"
   while [ -L "$src" ]; do
     local dir; dir="$(cd -P "$(dirname "$src")" && pwd)"
@@ -19,6 +14,7 @@ resolve_root() {
   local dir; dir="$(cd -P "$(dirname "$src")/.." && pwd)"
   printf "%s\n" "$dir"
 }
+
 HINT_ROOT_DEFAULT="$(resolve_root)"
 HINT_ROOT="${HINT_ROOT:-$HINT_ROOT_DEFAULT}"
 HINT_HINTDIR="${HINT_HINTDIR:-$HINT_ROOT/hint}"
@@ -30,191 +26,101 @@ is_tty(){ [[ -t 1 ]]; }
 bold(){ is_tty && tput bold || true; }
 dim(){ is_tty && tput dim || true; }
 sg(){ is_tty && tput sgr0 || true; }
-grey(){ is_tty && tput setaf 8 || true; }
-# color palette (fallback to no color if not a TTY)
-c_red(){ is_tty && tput setaf 1 || true; }
+c_cyan(){ is_tty && tput setaf 6 || true; }
 c_green(){ is_tty && tput setaf 2 || true; }
 c_yellow(){ is_tty && tput setaf 3 || true; }
-c_blue(){ is_tty && tput setaf 4 || true; }
-c_magenta(){ is_tty && tput setaf 5 || true; }
-c_cyan(){ is_tty && tput setaf 6 || true; }
-hr(){ printf "%s" "$(grey)────────────────────────────────────────────────────────$(sg)"; }
-
-teach_tip(){
-  local tips=(
-    'Ctrl-R searches history; Arrow keys to select, Enter to run.'
-    'Use `tldr <cmd>` for short, example-driven manuals.'
-    'Use `journalctl -p 3 -xb` to see errors from this boot.'
-    'Use `ss -tulpn` to list listening ports.'
-    'Use `dig +trace example.com` to debug DNS.'
-    'Use `sudo lsof +L1` to find deleted-but-open files eating disk.'
-  )
-  if has shuf; then shuf -e "${tips[@]}" -n 1; else printf "%s\n" "${tips[0]}"; fi
-}
-
-
-context_hints(){
-  local cwd="$PWD"
-  # Git repo
-  if git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
-    printf "GIT\tCurrent branch\tgit rev-parse --abbrev-ref HEAD\tShow current branch\n"
-    printf "GIT\tChanged files\tgit status -s\tShort status\n"
-    printf "GIT\tStash & pull\tgit stash && git pull --rebase\tUpdate safely\n"
-    printf "GIT\tFix last commit\tgit commit --amend --no-edit\tAmend without changing message\n"
-  fi
-  # Node / npm
-  if [[ -f "$cwd/package.json" ]]; then
-    printf "NODE\tInstall\tnpm ci\tClean install from lockfile\n"
-    printf "NODE\tAudit\tnpm audit\tVulnerability scan\n"
-    if command -v jq >/dev/null 2>&1; then
-      while IFS= read -r s; do
-        printf "NODE\tRun: %s\tnpm run %s\tFrom package.json scripts\n" "$s" "$s"
-      done < <(jq -r '.scripts | keys[]?' "$cwd/package.json" 2>/dev/null || true)
-    fi
-  fi
-  # PHP / Composer
-  if [[ -f "$cwd/composer.json" ]]; then
-    printf "PHP\tComposer install\tcomposer install\tInstall dependencies\n"
-    if command -v jq >/dev/null 2>&1; then
-      while IFS= read -r s; do
-        printf "PHP\tComposer script: %s\tcomposer run %s\tFrom composer.json scripts\n" "$s" "$s"
-      done < <(jq -r '.scripts | keys[]?' "$cwd/composer.json" 2>/dev/null || true)
-    fi
-  fi
-  # Docker Compose
-  if [[ -f "$cwd/docker-compose.yml" || -f "$cwd/compose.yml" ]]; then
-    printf "DOCKER\tCompose up\tdocker compose up -d\tStart services\n"
-    printf "DOCKER\tCompose logs\tdocker compose logs -f\tFollow logs\n"
-    printf "DOCKER\tCompose down\tdocker compose down\tStop services\n"
-  fi
-  # Makefile
-  if [[ -f "$cwd/Makefile" ]]; then
-    printf "OPS\tMake help\tmake help\tList tasks (if provided)\n"
-    printf "OPS\tMake build\tmake build\tBuild project\n"
-  fi
-  # .env present
-  if [[ -f "$cwd/.env" ]]; then
-    printf "OPS\tShow .env keys\tawk -F= '/^[A-Za-z_][A-Za-z0-9_]*=/{print $1}' .env\tList var names from .env\n"
-  fi
-}
+hr(){ printf "%s" "$(is_tty && tput setaf 8 || true)────────────────────────────────────────────────────────$(sg)"; }
 
 collect_from_dir(){
   local dir="$1"; [[ -d "$dir" ]] || return 0
   while IFS= read -r -d '' f; do bash "$f" || true; done < <(find "$dir" -type f -name '*.sh' -print0 | sort -z)
 }
 
-collect_hints(){
-  context_hints || true
+context_hints(){
+  local cwd="$PWD"
+  if git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
+    printf '%s\n' "GIT\tCurrent branch\tgit rev-parse --abbrev-ref HEAD\tShow current branch"
+    printf '%s\n' "GIT\tChanged files\tgit status -s\tShort status"
+    printf '%s\n' "GIT\tStash & pull\tgit stash && git pull --rebase\tUpdate safely"
+    printf '%s\n' "GIT\tFix last commit\tgit commit --amend --no-edit\tAmend without changing message"
+  fi
+  if [[ -f "$cwd/package.json" ]]; then
+    printf '%s\n' "NODE\tInstall deps\tnpm ci\tClean install from lockfile"
+    printf '%s\n' "NODE\tAudit\tnpm audit\tVulnerability scan"
+  fi
+  if [[ -f "$cwd/composer.json" ]]; then
+    printf '%s\n' "PHP\tComposer install\tcomposer install\tInstall dependencies"
+  fi
+  if [[ -f "$cwd/docker-compose.yml" || -f "$cwd/compose.yml" ]]; then
+    printf '%s\n' "DOCKER\tCompose up\tdocker compose up -d\tStart services"
+    printf '%s\n' "DOCKER\tCompose logs\tdocker compose logs -f\tFollow logs"
+    printf '%s\n' "DOCKER\tCompose down\tdocker compose down\tStop services"
+  fi
+  if [[ -f "$cwd/Makefile" ]]; then
+    printf '%s\n' "OPS\tMake help\tmake help\tList tasks (if provided)"
+    printf '%s\n' "OPS\tMake build\tmake build\tBuild project"
+  fi
+  if [[ -f "$cwd/.env" ]]; then
+    printf '%s\n' "OPS\tShow .env keys\tawk -F= '/^[A-Za-z_][A-Za-z0-9_]*=/{print \$1}' .env\tList var names from .env"
+  fi
+}
 
-  # All subdirs of HINT_HINTDIR (category-agnostic), plus custom and plugins
+collect_hints(){
+  context_hints
   [[ -d "$HINT_HINTDIR" ]] && while IFS= read -r -d '' sub; do collect_from_dir "$sub"; done < <(find "$HINT_HINTDIR" -maxdepth 1 -mindepth 1 -type d -print0 | sort -z)
-  # Plugins
   if [[ -n "$HINT_PLUGIN_DIRS" ]]; then
     IFS=':' read -r -a plugs <<< "$HINT_PLUGIN_DIRS"
     for p in "${plugs[@]}"; do [[ -d "$p/hint" ]] && while IFS= read -r -d '' sub; do collect_from_dir "$sub"; done < <(find "$p/hint" -maxdepth 1 -mindepth 1 -type d -print0 | sort -z); done
   fi
-  # Custom
   [[ -f "$HINT_CUSTOM_FILE" ]] && bash "$HINT_CUSTOM_FILE" || true
 }
 
-print_compact(){
-  local all="$1"
-  echo; printf "%sHINTS%s  %s(type 'hint i' for interactive)%s\n" "$(bold)" "$(sg)" "$(dim)" "$(sg)"
-  hr; echo
-  echo "$all" | awk -F'\t' '{
-    cat=$1; label=$2; cmd=$3; why=$4;
-    gsub(/\r/,"",cat); gsub(/\r/,"",label); gsub(/\r/,"",cmd); gsub(/\r/,"",why);
-    if (!seen[cat]++) { order[++n]=cat }
-    lines[cat]=lines[cat] sprintf("  • %-30s %s\n", label, cmd)
-  } END { for (i=1;i<=n;i++){ c=order[i]; printf("\n[%s]\n%s", c, lines[c]) } }'
-  echo; printf "%sTeach:%s %s\n" "$(bold)" "$(sg)" "$(teach_tip)"; echo
-}
-
-fzf_menu(){
-  local all="$1"; local menu
-  menu="$(echo "$all" | awk -F'\t' '{printf("[%s] %s\t%s\t— %s\n",$1,$2,$3,($4==""?"":$4))}')"
-  if has fzf; then
-    echo "$menu" | FZF_DEFAULT_OPTS="--ansi --no-sort --height 90% --border --layout=reverse --with-nth=1,2 --delimiter='\t' --prompt='hint > '" \
-      fzf --header "Teach: $(teach_tip)" --preview "awk -F'\t' '{print \$0}' <<< {}" | awk -F'\t' '{print $2}'
-  else
-    print_compact "$all"
-  fi
-}
-
-
-print_compact(){
-  local all="$1"
-  echo
-  printf "%s%sHINTS%s  %s(type 'hint i' for interactive)%s
-" "$(c_cyan)" "$(bold)" "$(sg)" "$(dim)" "$(sg)"
-  hr; echo
-  echo "$all" | awk -F'	' '{
-    cat=$1; label=$2; cmd=$3; why=$4;
-    gsub(/
-/,"",cat); gsub(/
-/,"",label); gsub(/
-/,"",cmd); gsub(/
-/,"",why);
-    if (!seen[cat]++) { order[++n]=cat }
-    lines[cat]=lines[cat] sprintf("%s  • %-28s%s  %s%s%s
-", "", label, "", cmd, (why? "  — ":""), why)
-  } END {
-    for (i=1;i<=n;i++) {
-      c=order[i];
-      printf("
-%s[%s]%s
-", "[36m[1m", c, "[0m"); # cyan bold
-      printf("%s", lines[c]);
-    }
-  }'
-  echo
-  printf "%sTip:%s %sRun the command as shown. Edit anything in <angle brackets> first.%s
-" "$(c_yellow)" "$(sg)" "$(dim)" "$(sg)"
-  echo
+teach_tip(){
+  local tips=(
+    'Use Tab to auto-complete paths and commands.'
+    'Use Ctrl-R to search your command history interactively.'
+    'Use tldr <cmd> to see short, example-based manuals.'
+    'Use journalctl -p 3 -xb to see errors from this boot.'
+    'Use ss -tulpn to list listening ports.'
+  ); echo "${tips[0]}"
 }
 
 print_beginner(){
   local all="$1"
+  local B="$(bold)"; local R="$(sg)"; local CY="$(c_cyan)"; local GR="$(c_green)"; local Y="$(c_yellow)"
   echo
-  printf "%s%sHINTS (Beginner Mode)%s  %s(type 'hint i' for interactive)%s
-" "$(c_green)" "$(bold)" "$(sg)" "$(dim)" "$(sg)"
+  printf "%s%sHINTS%s  %s(type 'hint i' for interactive)%s\n" "$GR" "$B" "$R" "$(dim)" "$R"
   hr; echo
-  echo "$all" | awk -F'	' '{
-    cat=$1; label=$2; cmd=$3; why=$4;
-    gsub(/
-/,"",cat); gsub(/
-/,"",label); gsub(/
-/,"",cmd); gsub(/
-/,"",why);
-    if (!seen[cat]++) { order[++n]=cat }
-    block[cat]=block[cat] \
-      sprintf("
-  • %s
-    %sWhat it does:%s %s
-    %sHow to use:%s  Copy and paste this command, then press Enter.
-    %sCommand:%s   %s
-", \
-              label, "[1m", "[0m", (why?why:"No description yet"), "[1m", "[0m", "[1m", "[0m", cmd);
-  } END {
-    for (i=1;i<=n;i++) {
-      c=order[i];
-      printf("
-%s[%s]%s
-", "[34m[1m", c, "[0m"); # blue bold
-      printf("%s
-", block[c]);
-    }
-  }'
-  echo
-  printf "%sReminder:%s If you see <like-this>, replace it with your value before running.
-" "$(c_yellow)" "$(sg)"
+  mapfile -t cats < <(echo "$all" | awk -F'\t' '!seen[$1]++{print $1}')
+  for c in "${cats[@]}"; do
+    printf "%s[%s]%s\n" "$CY$B" "$c" "$R"
+    echo "$all" | awk -F'\t' -v cat="$c" '
+      $1==cat {
+        printf("\n  • %s\n    What it does: %s\n    How to use:  Copy and paste, then press Enter.\n    Command:     %s\n",
+               $2, ($4?$4:"No description yet"), $3)
+      }'
+    echo
+  done
+  printf "%sTip:%s %sRun the command as shown. Replace anything in <angle brackets>.%s\n" "$Y" "$R" "$(dim)" "$R"
   echo
 }
+
+fzf_menu(){
+  local all="$1"
+  local menu; menu="$(echo "$all" | awk -F'\t' '{printf("[%s] %s\t%s\t— %s\n",$1,$2,$3,($4==""?"":$4))}')"
+  if has fzf; then
+    echo "$menu" | FZF_DEFAULT_OPTS="--ansi --no-sort --height 90% --border --layout=reverse --with-nth=1,2 --delimiter='\t' --prompt='hint > '" \
+      fzf --header "Teach: $(teach_tip)" --preview "awk -F'\t' '{print \$0}' <<< {}" | awk -F'\t' '{print $2}'
+  else
+    print_beginner "$all"
+  fi
+}
+
 doctor(){
-  printf "hint doctor — inspecting environment\n"
+  echo "hint doctor — inspecting environment"
   case ":$PATH:" in *":$HOME/.local/bin:"*) echo "✅ PATH has ~/.local/bin" ;; *)
     echo "⚠️  PATH missing ~/.local/bin — add: export PATH=\"\$HOME/.local/bin:\$PATH\" to ~/.bashrc" ;; esac
-  if has starship; then echo "✅ starship present"; else echo "⚠️  starship not found (optional for sysline)"; fi
+  if has starship; then echo "✅ starship present"; else echo "⚠️  starship not found (optional)"; fi
   if command -v hint >/dev/null 2>&1; then echo "✅ hint in PATH: $(command -v hint)"; else echo "❌ hint not on PATH"; fi
   echo "HINT_ROOT: $HINT_ROOT"
   echo "HINT_HINTDIR: $HINT_HINTDIR"
@@ -223,20 +129,10 @@ doctor(){
   echo "Found $cnt hint scripts under $HINT_HINTDIR"
 }
 
-debug_dump(){
-  echo "DEBUG:"
-  echo "  SHELL     = ${SHELL:-}"
-  echo "  HINT_ROOT = ${HINT_ROOT}"
-  echo "  HINT_HINTDIR = ${HINT_HINTDIR}"
-  echo "  CUSTOM    = ${HINT_CUSTOM_FILE} (exists: $( [[ -f "$HINT_CUSTOM_FILE" ]] && echo yes || echo no ))"
-}
-
 case "${1:-}" in
-  --beginner) ALL="$(collect_hints)"; print_beginner "$ALL" ;;
-
+  i|-i|interactive) ALL="$(collect_hints)"; fzf_menu "$ALL" ;;
+  --all|--compact) ALL="$(collect_hints)"; print_beginner "$ALL" ;;  # beginner is default visual
   --doctor) doctor ;;
-  --debug) debug_dump ;;
-  i|interactive) ALL="$(collect_hints)"; fzf_menu "$ALL" ;;
-  --all|"") ALL="$(collect_hints)"; print_compact "$ALL" ;;
-  *) echo "hint: unknown option '$1'"; echo "usage: hint [i|--all|--doctor|--debug]"; exit 2 ;;
+  --debug) echo "HINT_ROOT=$HINT_ROOT"; echo "HINT_HINTDIR=$HINT_HINTDIR"; echo "HINT_CUSTOM_FILE=$HINT_CUSTOM_FILE" ;;
+  *) ALL="$(collect_hints)"; print_beginner "$ALL" ;;
 esac
