@@ -19,7 +19,7 @@ jobs:
           # tar.gz
           tar -czf "dist/hint-${VERSION}.tar.gz" --exclude=dist --exclude=.git .
       - name: Upload artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: hint-artifacts
           path: dist/*
