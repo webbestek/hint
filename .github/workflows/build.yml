@@ -1,0 +1,25 @@
+name: Build
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Create artifacts
+        run: |
+          set -eux
+          VERSION="$(cat VERSION | tr -d '\n')"
+          mkdir -p dist
+          # zip
+          zip -r "dist/hint-v${VERSION}.zip" . -x "dist/*" -x ".git/*"
+          # tar.gz
+          tar -czf "dist/hint-${VERSION}.tar.gz" --exclude=dist --exclude=.git .
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: hint-artifacts
+          path: dist/*

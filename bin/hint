@@ -1,0 +1,138 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+on_err(){ rc=$?; printf "hint: error (exit %s). Try: hint --doctor\n" "$rc" >&2; exit "$rc"; }
+trap on_err ERR
+
+resolve_root(){
+  local src="${BASH_SOURCE[0]}"
+  while [ -L "$src" ]; do
+    local dir; dir="$(cd -P "$(dirname "$src")" && pwd)"
+    src="$(readlink "$src")"
+    [[ "$src" != /* ]] && src="$dir/$src"
+  done
+  local dir; dir="$(cd -P "$(dirname "$src")/.." && pwd)"
+  printf "%s\n" "$dir"
+}
+
+HINT_ROOT_DEFAULT="$(resolve_root)"
+HINT_ROOT="${HINT_ROOT:-$HINT_ROOT_DEFAULT}"
+HINT_HINTDIR="${HINT_HINTDIR:-$HINT_ROOT/hint}"
+HINT_CUSTOM_FILE="${HINT_CUSTOM_FILE:-$HOME/.config/hint/custom.sh}"
+HINT_PLUGIN_DIRS="${HINT_PLUGIN_DIRS:-}"
+
+has(){ command -v "$1" >/dev/null 2>&1; }
+is_tty(){ [[ -t 1 ]]; }
+bold(){ is_tty && tput bold || true; }
+dim(){ is_tty && tput dim || true; }
+sg(){ is_tty && tput sgr0 || true; }
+c_cyan(){ is_tty && tput setaf 6 || true; }
+c_green(){ is_tty && tput setaf 2 || true; }
+c_yellow(){ is_tty && tput setaf 3 || true; }
+hr(){ printf "%s" "$(is_tty && tput setaf 8 || true)────────────────────────────────────────────────────────$(sg)"; }
+
+collect_from_dir(){
+  local dir="$1"; [[ -d "$dir" ]] || return 0
+  while IFS= read -r -d '' f; do bash "$f" || true; done < <(find "$dir" -type f -name '*.sh' -print0 | sort -z)
+}
+
+context_hints(){
+  local cwd="$PWD"
+  if git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
+    printf '%s\n' "GIT\tCurrent branch\tgit rev-parse --abbrev-ref HEAD\tShow current branch"
+    printf '%s\n' "GIT\tChanged files\tgit status -s\tShort status"
+    printf '%s\n' "GIT\tStash & pull\tgit stash && git pull --rebase\tUpdate safely"
+    printf '%s\n' "GIT\tFix last commit\tgit commit --amend --no-edit\tAmend without changing message"
+  fi
+  if [[ -f "$cwd/package.json" ]]; then
+    printf '%s\n' "NODE\tInstall deps\tnpm ci\tClean install from lockfile"
+    printf '%s\n' "NODE\tAudit\tnpm audit\tVulnerability scan"
+  fi
+  if [[ -f "$cwd/composer.json" ]]; then
+    printf '%s\n' "PHP\tComposer install\tcomposer install\tInstall dependencies"
+  fi
+  if [[ -f "$cwd/docker-compose.yml" || -f "$cwd/compose.yml" ]]; then
+    printf '%s\n' "DOCKER\tCompose up\tdocker compose up -d\tStart services"
+    printf '%s\n' "DOCKER\tCompose logs\tdocker compose logs -f\tFollow logs"
+    printf '%s\n' "DOCKER\tCompose down\tdocker compose down\tStop services"
+  fi
+  if [[ -f "$cwd/Makefile" ]]; then
+    printf '%s\n' "OPS\tMake help\tmake help\tList tasks (if provided)"
+    printf '%s\n' "OPS\tMake build\tmake build\tBuild project"
+  fi
+  if [[ -f "$cwd/.env" ]]; then
+    printf '%s\n' "OPS\tShow .env keys\tawk -F= '/^[A-Za-z_][A-Za-z0-9_]*=/{print \$1}' .env\tList var names from .env"
+  fi
+}
+
+collect_hints(){
+  context_hints
+  [[ -d "$HINT_HINTDIR" ]] && while IFS= read -r -d '' sub; do collect_from_dir "$sub"; done < <(find "$HINT_HINTDIR" -maxdepth 1 -mindepth 1 -type d -print0 | sort -z)
+  if [[ -n "$HINT_PLUGIN_DIRS" ]]; then
+    IFS=':' read -r -a plugs <<< "$HINT_PLUGIN_DIRS"
+    for p in "${plugs[@]}"; do [[ -d "$p/hint" ]] && while IFS= read -r -d '' sub; do collect_from_dir "$sub"; done < <(find "$p/hint" -maxdepth 1 -mindepth 1 -type d -print0 | sort -z); done
+  fi
+  [[ -f "$HINT_CUSTOM_FILE" ]] && bash "$HINT_CUSTOM_FILE" || true
+}
+
+teach_tip(){
+  local tips=(
+    'Use Tab to auto-complete paths and commands.'
+    'Use Ctrl-R to search your command history interactively.'
+    'Use tldr <cmd> to see short, example-based manuals.'
+    'Use journalctl -p 3 -xb to see errors from this boot.'
+    'Use ss -tulpn to list listening ports.'
+  ); echo "${tips[0]}"
+}
+
+print_beginner(){
+  local all="$1"
+  local B="$(bold)"; local R="$(sg)"; local CY="$(c_cyan)"; local GR="$(c_green)"; local Y="$(c_yellow)"
+  echo
+  printf "%s%sHINTS%s  %s(type 'hint i' for interactive)%s\n" "$GR" "$B" "$R" "$(dim)" "$R"
+  hr; echo
+  mapfile -t cats < <(echo "$all" | awk -F'\t' '!seen[$1]++{print $1}')
+  for c in "${cats[@]}"; do
+    printf "%s[%s]%s\n" "$CY$B" "$c" "$R"
+    echo "$all" | awk -F'\t' -v cat="$c" '
+      $1==cat {
+        printf("\n  • %s\n    What it does: %s\n    How to use:  Copy and paste, then press Enter.\n    Command:     %s\n",
+               $2, ($4?$4:"No description yet"), $3)
+      }'
+    echo
+  done
+  printf "%sTip:%s %sRun the command as shown. Replace anything in <angle brackets>.%s\n" "$Y" "$R" "$(dim)" "$R"
+  echo
+}
+
+fzf_menu(){
+  local all="$1"
+  local menu; menu="$(echo "$all" | awk -F'\t' '{printf("[%s] %s\t%s\t— %s\n",$1,$2,$3,($4==""?"":$4))}')"
+  if has fzf; then
+    echo "$menu" | FZF_DEFAULT_OPTS="--ansi --no-sort --height 90% --border --layout=reverse --with-nth=1,2 --delimiter='\t' --prompt='hint > '" \
+      fzf --header "Teach: $(teach_tip)" --preview "awk -F'\t' '{print \$0}' <<< {}" | awk -F'\t' '{print $2}'
+  else
+    print_beginner "$all"
+  fi
+}
+
+doctor(){
+  echo "hint doctor — inspecting environment"
+  case ":$PATH:" in *":$HOME/.local/bin:"*) echo "✅ PATH has ~/.local/bin" ;; *)
+    echo "⚠️  PATH missing ~/.local/bin — add: export PATH=\"\$HOME/.local/bin:\$PATH\" to ~/.bashrc" ;; esac
+  if has starship; then echo "✅ starship present"; else echo "⚠️  starship not found (optional)"; fi
+  if command -v hint >/dev/null 2>&1; then echo "✅ hint in PATH: $(command -v hint)"; else echo "❌ hint not on PATH"; fi
+  echo "HINT_ROOT: $HINT_ROOT"
+  echo "HINT_HINTDIR: $HINT_HINTDIR"
+  echo "HINT_CUSTOM_FILE: $HINT_CUSTOM_FILE (exists: $( [[ -f "$HINT_CUSTOM_FILE" ]] && echo yes || echo no ))"
+  local cnt=0; while IFS= read -r -d '' f; do cnt=$((cnt+1)); done < <(find "$HINT_HINTDIR" -type f -name '*.sh' -print0 2>/dev/null || true)
+  echo "Found $cnt hint scripts under $HINT_HINTDIR"
+}
+
+case "${1:-}" in
+  i|-i|interactive) ALL="$(collect_hints)"; fzf_menu "$ALL" ;;
+  --all|--compact) ALL="$(collect_hints)"; print_beginner "$ALL" ;;  # beginner is default visual
+  --doctor) doctor ;;
+  --debug) echo "HINT_ROOT=$HINT_ROOT"; echo "HINT_HINTDIR=$HINT_HINTDIR"; echo "HINT_CUSTOM_FILE=$HINT_CUSTOM_FILE" ;;
+  *) ALL="$(collect_hints)"; print_beginner "$ALL" ;;
+esac
