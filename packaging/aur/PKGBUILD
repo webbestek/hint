@@ -1,7 +1,6 @@
 
-# Maintainer: Your Name <you@example.com>
 pkgname=hint-starship
-pkgver=0.1.0
+pkgver=0.2.0
 pkgrel=1
 pkgdesc="Starship-powered interactive command palette"
 arch=('any')
@@ -10,7 +9,6 @@ license=('MIT')
 depends=('starship')
 source=("$url/archive/refs/tags/v$pkgver.tar.gz")
 sha256sums=('REPLACE_WITH_REAL_SHA256')
-
 package() {
   cd "$srcdir/hint-$pkgver"
   install -Dm755 bin/hint "$pkgdir/usr/bin/hint"

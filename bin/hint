@@ -8,7 +8,6 @@
 
 set -euo pipefail
 
-# Require Starship to be installed
 if ! command -v starship >/dev/null 2>&1; then
   echo "hint: Starship is required. Install: https://starship.rs" >&2
   exit 1
@@ -24,19 +23,36 @@ grey()   { is_tty && tput setaf 8 || true; }
 hr()     { printf "%s" "$(grey)────────────────────────────────────────────────────────$(sg)"; }
 
 HINT_DIR="${HINT_DIR:-$HOME/.local/share/hint}"
-CONF_FILE="${HOME}/.config/hint/custom.sh"
+CUSTOM_FILE="${HOME}/.config/hint/custom.sh"
 SECTIONS="${HINT_SECTIONS:-FS,SYS,NET,PKG,GIT,DOCKER,NODE,PHP,HACK,DNS}"
+
+# ------------------------------------------------------------
+# Ensure per-user custom hints file exists the first time you run hint.
+# Users can add lines in the format (TAB separated):
+# CATEGORY<TAB>LABEL<TAB>COMMAND<TAB>WHY
+# A simple example is written on first creation.
+# ------------------------------------------------------------
+## AUTO-CREATE custom.sh
+if [[ ! -f "$CUSTOM_FILE" ]]; then
+  mkdir -p "$(dirname "$CUSTOM_FILE")"
+  cat <<'EOF' > "$CUSTOM_FILE"
+# ~/.config/hint/custom.sh — your personal hints live here.
+# Format: CATEGORY<TAB>LABEL<TAB>COMMAND<TAB>WHY
+printf "SYS\tReload shell\tsource ~/.bashrc\tApply changes without opening a new terminal\n"
+EOF
+  echo "Created $CUSTOM_FILE — edit this file to add your own hints."
+fi
 
 teach_tip() {
   tips=(
-    'Ctrl-R searches history; Enter to run, Arrow keys to pick older entries.'
-    'Use `tldr <cmd>` for short, example-driven manuals (install: tldr).'
+    'Ctrl-R searches history; Arrow keys to select, Enter to run.'
+    'Use `tldr <cmd>` for short, example-driven manuals.'
     'Use ripgrep (`rg`) to search code: rg "pattern" .'
     'Use `journalctl -p 3 -xb` to see errors from this boot.'
-    'Use `ss -tulpn` to list listening network ports.'
-    'Use `dig A example.com +trace` to debug DNS resolution path.'
-    'Use `sudo lsof +L1` to find deleted-but-open files eating disk space.'
-    'Use `sudo dmesg -T` to see recent kernel messages with timestamps.'
+    'Use `ss -tulpn` to list listening ports.'
+    'Use `dig +trace example.com` to debug DNS.'
+    'Use `sudo lsof +L1` to find deleted-but-open files eating disk.'
+    'Use `sudo dmesg -T` for kernel messages with timestamps.'
   )
   shuf -e "${tips[@]}" -n 1 2>/dev/null || printf "%s\n" "${tips[0]}"
 }
@@ -47,7 +63,7 @@ collect_hints() {
       [[ -f "$f" ]] && bash "$f"
     done
   done
-  [[ -f "$CONF_FILE" ]] && bash "$CONF_FILE"
+  [[ -f "$CUSTOM_FILE" ]] && bash "$CUSTOM_FILE"
 }
 
 print_compact() {
@@ -56,7 +72,8 @@ print_compact() {
   printf "%sHINTS%s  %s(type 'hint i' for interactive)%s\n" "$(bold)" "$(sg)" "$(dim)" "$(sg)"
   hr; echo
   for cat in ${SECTIONS//,/ }; do
-    echo "$all" | awk -F'\t' -v k="$cat" '($1==k){print}' | head -n 10       | awk -F'\t' -v k="$cat" 'BEGIN{printf("\n[%s]\n", k)} {printf("  • %-30s %s\n", $2, $3)}'
+    echo "$all" | awk -F'\t' -v k="$cat" '($1==k){print}' | head -n 10 \
+      | awk -F'\t' -v k="$cat" 'BEGIN{printf("\n[%s]\n", k)} {printf("  • %-30s %s\n", $2, $3)}'
   done
   echo
   printf "%sTeach:%s %s\n" "$(bold)" "$(sg)" "$(teach_tip)"
@@ -75,7 +92,9 @@ fzf_menu() {
   awk -F'\t' '{printf("[%s] %s\t%s\t— %s\n", $1,$2,$3,($4==""?"":$4))}' "${list}.flt" > "${list}.menu"
   local out=""
   if has fzf; then
-    out="$(FZF_DEFAULT_OPTS="--ansi --no-sort --height 90% --border --layout=reverse --with-nth=1,2 --delimiter='\t' --prompt='hint > ' --bind 'alt-enter:execute-silent(echo -n {2} | xclip -selection clipboard)+abort' --preview-window=down,8:wrap"       fzf --header "Teach: $(teach_tip)" --preview "awk -F'\t' '{print \$0}' <<< {}" < "${list}.menu"       | awk -F'\t' '{print $2}')"
+    out="$(FZF_DEFAULT_OPTS="--ansi --no-sort --height 90% --border --layout=reverse --with-nth=1,2 --delimiter='\t' --prompt='hint > ' --bind 'alt-enter:execute-silent(echo -n {2} | xclip -selection clipboard)+abort' --preview-window=down,8:wrap" \
+      fzf --header "Teach: $(teach_tip)" --preview "awk -F'\t' '{print \$0}' <<< {}" < "${list}.menu" \
+      | awk -F'\t' '{print $2}')"
     [[ -n "$out" ]] && printf "%s\n" "$out"
   else
     print_compact "$1"

@@ -1,10 +1,8 @@
 
 ## Summary
-
 Explain what this PR changes and why.
 
 ## Category
-
 - [ ] FS
 - [ ] SYS
 - [ ] NET
@@ -18,9 +16,8 @@ Explain what this PR changes and why.
 - [ ] Docs / Infra
 
 ## Checklist
-
-- [ ] Lines follow the format `CATEGORY\tLABEL\tCOMMAND\tWHY`
-- [ ] Commands are safe by default (read-only or prompt before destructive actions)
-- [ ] Scripts are fast and avoid unnecessary loops
-- [ ] Ran `shellcheck` where applicable
+- [ ] Lines follow `CATEGORY\tLABEL\tCOMMAND\tWHY`
+- [ ] Commands are safe by default (or prompt when destructive)
+- [ ] Scripts are fast (no unnecessary loops)
+- [ ] Ran `shellcheck` locally or let CI run
 - [ ] Updated docs if needed

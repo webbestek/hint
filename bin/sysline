@@ -5,21 +5,12 @@
 # ----------------------------------------------------------------------------
 #!/usr/bin/env bash
 set -euo pipefail
-
-# Require starship presence (soft check)
 command -v starship >/dev/null 2>&1 || exit 0
-
 load="$(cut -d ' ' -f1 < /proc/loadavg 2>/dev/null || echo '?')"
 ram_line="$(free -h | awk '/Mem:/ {print $3 "/" $2}' 2>/dev/null)"
 disk_pct="$(df -h . 2>/dev/null | awk 'NR==2{print $5}')"
-
-bat_pct=""
-for b in /sys/class/power_supply/BAT*/capacity; do
-  [[ -r "$b" ]] && bat_pct="$(cat "$b")%" && break
-done
-
+bat_pct=""; for b in /sys/class/power_supply/BAT*/capacity; do [[ -r "$b" ]] && bat_pct="$(cat "$b")%" && break; done
 out="🖥 load ${load}  |  🧠 RAM ${ram_line}  |  💽 ${disk_pct}"
 [[ -n "${bat_pct}" ]] && out="${out}  |  🔋 ${bat_pct}"
 out="${out}  |  💡 type hint"
-
 printf "%s\n" "$out"

@@ -1,11 +1,10 @@
 
-# Logs
+# Logs / caches
 *.log
 *.tmp
 .cache/
 dist/
 __pycache__/
-*.swp
 
 # OS
 .DS_Store

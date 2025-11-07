@@ -1,57 +1,42 @@
 
 name: Release
-
 on:
   push:
     tags:
       - 'v*'
-
 permissions:
   contents: write
-
 jobs:
   release:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
+        with: {fetch-depth: 0}
       - name: Set VERSION from tag
         id: vars
         run: echo "VERSION=${GITHUB_REF_NAME#v}" >> $GITHUB_OUTPUT
-
       - name: Install build deps
         run: |
           sudo apt-get update
           sudo apt-get install -y ruby-dev build-essential shellcheck
           sudo gem install --no-document fpm
-
       - name: Lint (shellcheck)
         run: |
           shellcheck -x bin/* || true
           shellcheck -x scripts/*.sh || true
           find hint -name '*.sh' -print0 | xargs -0 -I{} shellcheck -x "{}" || true
           shellcheck -x config/custom.sh || true
-
       - name: Build artifacts (tarball + deb)
         env:
           VERSION: ${{ steps.vars.outputs.VERSION }}
-        run: |
-          ./scripts/build.sh
-          ls -l dist
-
+        run: ./scripts/build.sh
       - name: Compute checksums
         run: |
           cd dist
-          for f in *; do
-            sha256sum "$f" >> SHA256SUMS.txt
-          done
+          for f in *; do sha256sum "$f" >> SHA256SUMS.txt; done
           cat SHA256SUMS.txt
-
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          files: |
-            dist/*
+          files: dist/*
           generate_release_notes: true
