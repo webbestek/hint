@@ -12,3 +12,8 @@ jobs:
           shellcheck -x scripts/*.sh || true
           find hint -name '*.sh' -print0 | xargs -0 -I{} shellcheck -x "{}" || true
           shellcheck -x config/custom.sh || true
+
+      - name: Permissions check
+        run: |
+          ./scripts/fix-perms.sh
+          git diff --quiet || (echo "::warning::Some files needed +x; run scripts/fix-perms.sh and commit." && git --no-pager diff --name-status || true)

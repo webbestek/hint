@@ -26,14 +26,14 @@ source ~/.bashrc
 
 ### 2) .deb package (Ubuntu/Pop!_OS)
 ```bash
-wget https://github.com/kevin4hrens/hint/releases/download/v0.3.0/hint_0.4.0_amd64.deb
-sudo apt install ./hint_0.4.0_amd64.deb
+wget https://github.com/kevin4hrens/hint/releases/download/v0.3.0/hint_0.6.0_amd64.deb
+sudo apt install ./hint_0.6.0_amd64.deb
 ```
 
 ### 3) Tarball
 ```bash
-wget https://github.com/kevin4hrens/hint/releases/download/v0.3.0/hint-0.4.0.tar.gz
-tar -xzf hint-0.4.0.tar.gz -C ~/.local/share/
+wget https://github.com/kevin4hrens/hint/releases/download/v0.3.0/hint-0.6.0.tar.gz
+tar -xzf hint-0.6.0.tar.gz -C ~/.local/share/
 ~/.local/share/hint/scripts/install.sh
 ```
 
@@ -122,13 +122,13 @@ rm -f ~/.local/bin/hint ~/.local/bin/sysline
      ```
    - `.deb` (Ubuntu/Pop!_OS):  
      ```bash
-     wget https://github.com/kevin4hrens/hint/releases/download/v0.4.0/hint_0.4.0_amd64.deb
-     sudo apt install ./hint_0.4.0_amd64.deb
+     wget https://github.com/kevin4hrens/hint/releases/download/v0.4.0/hint_0.6.0_amd64.deb
+     sudo apt install ./hint_0.6.0_amd64.deb
      ```
    - Tarball:  
      ```bash
-     wget https://github.com/kevin4hrens/hint/releases/download/v0.4.0/hint-0.4.0.tar.gz
-     tar -xzf hint-0.4.0.tar.gz -C ~/.local/share/
+     wget https://github.com/kevin4hrens/hint/releases/download/v0.4.0/hint-0.6.0.tar.gz
+     tar -xzf hint-0.6.0.tar.gz -C ~/.local/share/
      ~/.local/share/hint/scripts/install.sh
      source ~/.bashrc
      ```
@@ -195,7 +195,51 @@ Yes. Use Git clone or a Homebrew Tap (packaging scaffolds included). Some Linux-
 
 ## 🛠 Troubleshooting
 
+- `hint: command not found` → ensure `~/.local/bin` is on PATH (**and** restart your shell). The installer appends it to `~/.bashrc`. Verify with `echo $PATH`.
+- `bash: bind: \C-h: first non-whitespace character is not '"'` or `ash: bind`: you're not in Bash. The keybinding is Bash-only; remove the binding block from `~/.bashrc` or switch to Bash.
+- Ctrl‑H stops working as Backspace: your terminal uses ^H as erase. Use the default Alt‑h binding instead, or set `HINT_BIND_KEY="\eh"` and re-run the installer.
+
+
 - `hint: command not found` → Ensure `~/.local/bin` is on PATH. The installer appends it to `~/.bashrc`.
 - Starship line not visible → check that the `custom.sysline` block is present in `~/.config/starship.toml` and restart your terminal.
 - Clipboard not copying in interactive mode → install `xclip` or copy manually.
 - ShellCheck warnings in CI → they’re surfaced but don’t fail the build by default. Run `make lint` locally to fix them.
+
+
+### ⌨️ Keybinding (optional)
+
+By default we add an **Alt‑h** binding for Bash only (interactive shells):
+```bash
+bind -x '"\eh":"hint i"'
+```
+- Alt‑h is chosen to avoid conflicts with **Ctrl‑H** (often mapped to Backspace).
+- You can override the key by setting `HINT_BIND_KEY`, e.g. `export HINT_BIND_KEY="\C-h"` before running the installer.
+- If you use `ash`, `dash`, or `zsh`, the Bash `bind` command is not applied.
+
+To remove the binding block, delete the lines between:
+```
+# >>> hint-bind >>>
+# <<< hint-bind <<<
+```
+in your `~/.bashrc`.
+
+
+
+### 🎯 UX tips
+
+- The status line now shows **your username only** for privacy.
+- Consistent spacing and separators make it easier to scan load, RAM, disk, and battery.
+- The right-most hint reminds you: `✧ type hint` — so the action is always on-screen.
+- Prefer **Alt-h** to open the interactive palette; it won’t clash with Backspace.
+
+### 🔐 Executable permissions
+
+If you pulled from Git or copied files and executables lost their `+x` bit, fix them with:
+```bash
+./scripts/fix-perms.sh
+```
+or:
+```bash
+make fix-perms
+```
+

@@ -8,3 +8,13 @@
 ## 0.4.0 — 2025-11-07
 - Extended README with Getting Started, Usage, FAQ, and Troubleshooting.
 - Version bump for public release.
+## 0.5.0 — 2025-11-07
+- Safer keybinding: default to **Alt‑h** via Bash-only guarded block; configurable with `HINT_BIND_KEY`.
+- Fix: no more `ash: bind` errors; bindings only apply in interactive Bash.
+- Fix: avoid breaking Backspace / `h` by not forcing Ctrl‑H.
+- sysline: show `username@host` prefix.
+- README: clearer onboarding, keybinding notes, and troubleshooting.
+## 0.6.0 — 2025-11-07
+- UI: sysline shows **username only** (removed @hostname), consistent separators, refined hint suffix (“✧ type hint”).
+- New: `scripts/fix-perms.sh` and `make fix-perms` to repair executable bits.
+- CI: permissions check step surfaces missing +x in PRs.

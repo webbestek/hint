@@ -18,3 +18,6 @@ lint:
 
 install:
 	./scripts/install.sh
+
+fix-perms:
+	./scripts/fix-perms.sh

@@ -35,8 +35,6 @@ if ! grep -q 'export PATH="$HOME/.local/bin:$PATH"' "$HOME/.bashrc" 2>/dev/null;
 fi
 
 # Optional keybinding (Ctrl-H -> hint i)
-if ! grep -q 'bind -x.*hint i' "$HOME/.bashrc" 2>/dev/null; then
-  echo 'bind -x "\\C-h": "hint i"' >> "$HOME/.bashrc"
 fi
 
 # Starship dev override
@@ -77,3 +75,17 @@ echo "    starship: dev module appended to \$HOME/.config/starship.toml"
 echo
 echo "→ Reload your shell:  source ~/.bashrc"
 echo "→ Test now:           hint    (or press Ctrl-H)"
+
+# Add optional keybinding for bash (Alt-h by default). Set HINT_BIND_KEY to override (e.g., "\C-h").
+BASH_BIND_MARK_BEGIN="# >>> hint-bind >>>"
+BASH_BIND_MARK_END="# <<< hint-bind <<<"
+if [[ -n "${BASH_VERSION:-}" && "$-" == *i* ]]; then
+  key="${HINT_BIND_KEY:-\\eh}"   # \\eh = Alt-h; safer than Ctrl-H (backspace)
+  if ! grep -q "$BASH_BIND_MARK_BEGIN" "$HOME/.bashrc" 2>/dev/null; then
+    {
+      echo "$BASH_BIND_MARK_BEGIN"
+      echo "bind -x '\"${key}\":\"hint i\"'"
+      echo "$BASH_BIND_MARK_END"
+    } >> "$HOME/.bashrc"
+  fi
+fi
