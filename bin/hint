@@ -45,12 +45,60 @@ teach_tip(){
   if has shuf; then shuf -e "${tips[@]}" -n 1; else printf "%s\n" "${tips[0]}"; fi
 }
 
+
+context_hints(){
+  local cwd="$PWD"
+  # Git repo
+  if git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
+    printf "GIT\tCurrent branch\tgit rev-parse --abbrev-ref HEAD\tShow current branch\n"
+    printf "GIT\tChanged files\tgit status -s\tShort status\n"
+    printf "GIT\tStash & pull\tgit stash && git pull --rebase\tUpdate safely\n"
+    printf "GIT\tFix last commit\tgit commit --amend --no-edit\tAmend without changing message\n"
+  fi
+  # Node / npm
+  if [[ -f "$cwd/package.json" ]]; then
+    printf "NODE\tInstall\tnpm ci\tClean install from lockfile\n"
+    printf "NODE\tAudit\tnpm audit\tVulnerability scan\n"
+    if command -v jq >/dev/null 2>&1; then
+      while IFS= read -r s; do
+        printf "NODE\tRun: %s\tnpm run %s\tFrom package.json scripts\n" "$s" "$s"
+      done < <(jq -r '.scripts | keys[]?' "$cwd/package.json" 2>/dev/null || true)
+    fi
+  fi
+  # PHP / Composer
+  if [[ -f "$cwd/composer.json" ]]; then
+    printf "PHP\tComposer install\tcomposer install\tInstall dependencies\n"
+    if command -v jq >/dev/null 2>&1; then
+      while IFS= read -r s; do
+        printf "PHP\tComposer script: %s\tcomposer run %s\tFrom composer.json scripts\n" "$s" "$s"
+      done < <(jq -r '.scripts | keys[]?' "$cwd/composer.json" 2>/dev/null || true)
+    fi
+  fi
+  # Docker Compose
+  if [[ -f "$cwd/docker-compose.yml" || -f "$cwd/compose.yml" ]]; then
+    printf "DOCKER\tCompose up\tdocker compose up -d\tStart services\n"
+    printf "DOCKER\tCompose logs\tdocker compose logs -f\tFollow logs\n"
+    printf "DOCKER\tCompose down\tdocker compose down\tStop services\n"
+  fi
+  # Makefile
+  if [[ -f "$cwd/Makefile" ]]; then
+    printf "OPS\tMake help\tmake help\tList tasks (if provided)\n"
+    printf "OPS\tMake build\tmake build\tBuild project\n"
+  fi
+  # .env present
+  if [[ -f "$cwd/.env" ]]; then
+    printf "OPS\tShow .env keys\tawk -F= '/^[A-Za-z_][A-Za-z0-9_]*=/{print $1}' .env\tList var names from .env\n"
+  fi
+}
+
 collect_from_dir(){
   local dir="$1"; [[ -d "$dir" ]] || return 0
   while IFS= read -r -d '' f; do bash "$f" || true; done < <(find "$dir" -type f -name '*.sh' -print0 | sort -z)
 }
 
 collect_hints(){
+  context_hints || true
+
   # All subdirs of HINT_HINTDIR (category-agnostic), plus custom and plugins
   [[ -d "$HINT_HINTDIR" ]] && while IFS= read -r -d '' sub; do collect_from_dir "$sub"; done < <(find "$HINT_HINTDIR" -maxdepth 1 -mindepth 1 -type d -print0 | sort -z)
   # Plugins

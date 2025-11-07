@@ -109,3 +109,29 @@ tar -xzf hint-1.0.1.tar.gz -C ~/.local/share/
 source ~/.bashrc
 hint --doctor
 ```
+
+
+## Context-aware suggestions
+
+`hint` notices common project files and suggests relevant commands automatically:
+- Git repos (`.git`) → status, branch, amend, stash+pull
+- Node projects (`package.json`) → `npm ci`, `npm audit`, scripts (if `jq` is present)
+- PHP projects (`composer.json`) → `composer install`, composer scripts (with `jq`)
+- Docker Compose (`docker-compose.yml` or `compose.yml`) → up/logs/down
+- Makefile → `make help`, `make build`
+- `.env` → list keys
+
+## Insert selected hint into your prompt (optional)
+Enable a Bash-only function that opens the interactive palette and **pastes** the chosen command into your current prompt (you can edit it before pressing Enter):
+
+```bash
+~/.local/share/hint/scripts/enable-insert-binding.sh
+source ~/.bashrc
+# Press Alt-h -> choose -> the command is inserted into your prompt
+```
+
+Disable it again:
+```bash
+~/.local/share/hint/scripts/disable-insert-binding.sh
+source ~/.bashrc
+```

@@ -10,3 +10,9 @@
 - Added issue and PR templates.
 - Added AI contributor docs: `.cursorrules`, `docs/COPILOT.md`, `docs/CHATGPT.md`, `docs/CURSOR.md`, `docs/CONTRIBUTING_AI.md`.
 - README: added CI, release, and install-from-release instructions.
+
+## 1.1.0 — 2025-11-07
+- Fix: corrected quoting in `hint/ai/core.sh` to avoid EOF errors with backticks.
+- More hints across categories (general, system, network, dns, web, security, devops, git, docker, node, php, hacker, ai).
+- Context engine: auto-suggests commands based on the current directory (Git, package.json, composer.json, docker-compose, Makefile, .env).
+- New: optional `enable-insert-binding.sh` that binds Alt-h to open the interactive palette and insert the chosen command into the current prompt.
