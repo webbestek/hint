@@ -26,23 +26,6 @@ HINT_DIR="${HINT_DIR:-$HOME/.local/share/hint}"
 CUSTOM_FILE="${HOME}/.config/hint/custom.sh"
 SECTIONS="${HINT_SECTIONS:-FS,SYS,NET,PKG,GIT,DOCKER,NODE,PHP,HACK,DNS}"
 
-# ------------------------------------------------------------
-# Ensure per-user custom hints file exists the first time you run hint.
-# Users can add lines in the format (TAB separated):
-# CATEGORY<TAB>LABEL<TAB>COMMAND<TAB>WHY
-# A simple example is written on first creation.
-# ------------------------------------------------------------
-## AUTO-CREATE custom.sh
-if [[ ! -f "$CUSTOM_FILE" ]]; then
-  mkdir -p "$(dirname "$CUSTOM_FILE")"
-  cat <<'EOF' > "$CUSTOM_FILE"
-# ~/.config/hint/custom.sh — your personal hints live here.
-# Format: CATEGORY<TAB>LABEL<TAB>COMMAND<TAB>WHY
-printf "SYS\tReload shell\tsource ~/.bashrc\tApply changes without opening a new terminal\n"
-EOF
-  echo "Created $CUSTOM_FILE — edit this file to add your own hints."
-fi
-
 teach_tip() {
   tips=(
     'Ctrl-R searches history; Arrow keys to select, Enter to run.'
@@ -63,6 +46,7 @@ collect_hints() {
       [[ -f "$f" ]] && bash "$f"
     done
   done
+  # Optional per-user hints: only load if the file exists.
   [[ -f "$CUSTOM_FILE" ]] && bash "$CUSTOM_FILE"
 }
 
