@@ -1,0 +1,4 @@
+
+# Allow 'source' to find files relative to project
+external-sources=true
+exclude=SC1091

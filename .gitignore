@@ -1,0 +1,16 @@
+
+# Logs
+*.log
+*.tmp
+.cache/
+dist/
+__pycache__/
+*.swp
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Editors
+.vscode/
+.idea/

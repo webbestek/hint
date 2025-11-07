@@ -1,0 +1,27 @@
+
+# -----------------------------------------------------------------------------
+# Starship custom module for 'hint'
+# -----------------------------------------------------------------------------
+format = """
+$custom_sysline
+$all
+"""
+
+[custom_sysline]
+command = "~/.local/share/hint/bin/sysline"
+when = "true"
+shell = "bash"
+format = "$output\n"
+
+# Optional: keep time/battery visible; memory module is redundant with sysline.
+[time]
+disabled = false
+format = "🕒 [$time]($style) "
+time_format = "%H:%M"
+style = "bold dimmed"
+
+[battery]
+disabled = false
+full_symbol = "🔋"
+charging_symbol = "⚡"
+discharging_symbol = "🔌"

@@ -1,0 +1,94 @@
+# ----------------------------------------------------------------------------
+# Copyright (c) 2025 Kevin Ahrens
+# Made with ❤️ by Kevin — and the community.
+# Licensed under the MIT License (see LICENSE).
+# ----------------------------------------------------------------------------
+#!/usr/bin/env bash
+# hint — Starship-only interactive command palette
+
+set -euo pipefail
+
+# Require Starship to be installed
+if ! command -v starship >/dev/null 2>&1; then
+  echo "hint: Starship is required. Install: https://starship.rs" >&2
+  exit 1
+fi
+
+is_tty() { [[ -t 1 ]]; }
+has() { command -v "$1" >/dev/null 2>&1; }
+
+bold()   { is_tty && tput bold    || true; }
+dim()    { is_tty && tput dim     || true; }
+sg()     { is_tty && tput sgr0    || true; }
+grey()   { is_tty && tput setaf 8 || true; }
+hr()     { printf "%s" "$(grey)────────────────────────────────────────────────────────$(sg)"; }
+
+HINT_DIR="${HINT_DIR:-$HOME/.local/share/hint}"
+CONF_FILE="${HOME}/.config/hint/custom.sh"
+SECTIONS="${HINT_SECTIONS:-FS,SYS,NET,PKG,GIT,DOCKER,NODE,PHP,HACK,DNS}"
+
+teach_tip() {
+  tips=(
+    'Ctrl-R searches history; Enter to run, Arrow keys to pick older entries.'
+    'Use `tldr <cmd>` for short, example-driven manuals (install: tldr).'
+    'Use ripgrep (`rg`) to search code: rg "pattern" .'
+    'Use `journalctl -p 3 -xb` to see errors from this boot.'
+    'Use `ss -tulpn` to list listening network ports.'
+    'Use `dig A example.com +trace` to debug DNS resolution path.'
+    'Use `sudo lsof +L1` to find deleted-but-open files eating disk space.'
+    'Use `sudo dmesg -T` to see recent kernel messages with timestamps.'
+  )
+  shuf -e "${tips[@]}" -n 1 2>/dev/null || printf "%s\n" "${tips[0]}"
+}
+
+collect_hints() {
+  for d in general git docker node php networking hacker; do
+    for f in "${HINT_DIR}/hint/${d}/"*.sh; do
+      [[ -f "$f" ]] && bash "$f"
+    done
+  done
+  [[ -f "$CONF_FILE" ]] && bash "$CONF_FILE"
+}
+
+print_compact() {
+  local all="$1"
+  echo
+  printf "%sHINTS%s  %s(type 'hint i' for interactive)%s\n" "$(bold)" "$(sg)" "$(dim)" "$(sg)"
+  hr; echo
+  for cat in ${SECTIONS//,/ }; do
+    echo "$all" | awk -F'\t' -v k="$cat" '($1==k){print}' | head -n 10       | awk -F'\t' -v k="$cat" 'BEGIN{printf("\n[%s]\n", k)} {printf("  • %-30s %s\n", $2, $3)}'
+  done
+  echo
+  printf "%sTeach:%s %s\n" "$(bold)" "$(sg)" "$(teach_tip)"
+  echo
+  printf "%sTip:%s run hint i to search and select.\n" "$(bold)" "$(sg)"
+}
+
+fzf_menu() {
+  local list
+  list="$(mktemp)"
+  echo "$1" > "$list"
+  awk -F'\t' -v wanted="$SECTIONS" '
+    BEGIN{ split(wanted, w, ","); for(i in w) allow[w[i]]=1 }
+    {cat=$1; if(allow[cat]) print}
+  ' "$list" > "${list}.flt"
+  awk -F'\t' '{printf("[%s] %s\t%s\t— %s\n", $1,$2,$3,($4==""?"":$4))}' "${list}.flt" > "${list}.menu"
+  local out=""
+  if has fzf; then
+    out="$(FZF_DEFAULT_OPTS="--ansi --no-sort --height 90% --border --layout=reverse --with-nth=1,2 --delimiter='\t' --prompt='hint > ' --bind 'alt-enter:execute-silent(echo -n {2} | xclip -selection clipboard)+abort' --preview-window=down,8:wrap"       fzf --header "Teach: $(teach_tip)" --preview "awk -F'\t' '{print \$0}' <<< {}" < "${list}.menu"       | awk -F'\t' '{print $2}')"
+    [[ -n "$out" ]] && printf "%s\n" "$out"
+  else
+    print_compact "$1"
+  fi
+  rm -f "$list" "${list}.flt" "${list}.menu"
+}
+
+main() {
+  ALL="$(collect_hints)"
+  case "${1:-}" in
+    i|interactive) fzf_menu "$ALL" ;;
+    --all) print_compact "$ALL" ;;
+    *) print_compact "$ALL" ;;
+  esac
+}
+main "$@"
