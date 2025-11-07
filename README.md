@@ -1,288 +1,111 @@
-# hint — Starship-powered interactive command palette
+# hint — your fast, Starship-ready command palette for the terminal
 
-**hint** is a fast, clean, *Starship-only* command palette for your terminal. It helps new Linux users learn commands without being annoying, and gives power users a context-aware launcher for Git, Docker, networking, DNS, logs, and more.
+Small, pure-Bash tool that surfaces useful commands, system stats, and debugging hints — instantly, interactively, and without bloat.
 
-> Made with ❤️ by Kevin — and the community. MIT Licensed.
+## What it is
 
-## Features
+`hint` adds a smart command palette to your shell. It prints short, practical commands you can run right away, and an interactive picker (`hint i`) when you want to search. It integrates with Starship to show a neat system line at the top of your prompt (load, RAM, disk, battery, and a gentle reminder to type `hint`).
 
-- **Starship-first**: installs a Starship custom module + `hint` CLI.
-- **Interactive palette** with search (uses `fzf` if available) and copy-to-clipboard (Alt+Enter).
-- **Context-aware**: Git repo? Compose file? package.json/composer.json? It adapts.
-- **Hacker/Debugging mode**: rich hints for logs, DNS, networking, tcpdump/tshark, ufw, fail2ban, nmap, mtr.
-- **Extensible**: drop new hint files in `hint/<category>/` and optionally add your own file at `~/.config/hint/custom.sh`.
-- **Fast**: pure Bash core, zero network calls, optional `jq` for nicer JSON.
+- Fast startup (sub-100ms paths)  
+- Pure Bash at runtime  
+- No network calls by default  
+- Safe-by-default commands  
+- Extensible: drop new files under `hint/<category>/` or create `~/.config/hint/custom.sh`
 
 ## Install
 
-Choose one method.
-
-### 1) Easy GitHub clone (recommended)
+**Git clone (recommended)**
 ```bash
 git clone https://github.com/kevin4hrens/hint ~/.local/share/hint
 ~/.local/share/hint/scripts/install.sh
 source ~/.bashrc
 ```
 
-### 2) .deb package (Ubuntu/Pop!_OS)
+**Dev install (live symlinks)**
 ```bash
-wget https://github.com/kevin4hrens/hint/releases/download/v0.3.0/hint_0.7.0_amd64.deb
-sudo apt install ./hint_0.7.0_amd64.deb
+git clone git@github.com:kevin4hrens/hint.git ~/Projects/hint
+~/Projects/hint/scripts/dev-install.sh
+source ~/.bashrc
 ```
 
-### 3) Tarball
-```bash
-wget https://github.com/kevin4hrens/hint/releases/download/v0.3.0/hint-0.7.0.tar.gz
-tar -xzf hint-0.7.0.tar.gz -C ~/.local/share/
-~/.local/share/hint/scripts/install.sh
-```
+## Usage
 
-After install, you’ll see a Starship banner like:
-```
-🖥 load 0.42 | 🧠 RAM 3.1G/15.4G | 💽 42% | 🔋 78% | 💡 type hint
-```
-- Press **Ctrl-H** for the interactive palette.
-- Type `hint` for compact hints, `hint i` for the full picker.
+- `hint` — compact tips grouped by category  
+- `hint i` — interactive picker (uses `fzf` if present)  
+- `hint --doctor` — quick environment diagnostics  
+- `hint --debug` — print resolved paths and settings
 
-## ✨ Add your own custom hints (optional)
+### Custom hints
 
-If you want personal hints, create this file:
+Optional file:
 ```
 ~/.config/hint/custom.sh
 ```
-The file is **optional**. If it exists, `hint` loads it; if not, it’s skipped silently.
-
-Each line prints a hint as **TAB-separated** fields:
+Each line should print a TAB-separated hint:
 ```
 CATEGORY<TAB>LABEL<TAB>COMMAND<TAB>WHY
 ```
-Examples:
+
+Example:
 ```bash
-printf "SYS\tReload shell\tsource ~/.bashrc\tApply changes without opening a new terminal\n"
-printf "NET\tPing test\tping -c 4 8.8.8.8\tCheck connectivity\n"
-printf "GIT\tFix author\tgit commit --amend --reset-author\tUpdate commit author\n"
+printf "SYS\tReload shell\tsource ~/.bashrc\tApply changes without a new terminal\n"
 ```
 
-## Requirements
+## Dynamic paths
 
-- **Starship** prompt (required). Installer aborts if missing.
-- Optional: `fzf`, `jq`, `dnsutils` (`dig`), `fd-find`, `ripgrep`, `xclip`, `nmap`, `mtr-tiny`, `tshark`, `shellcheck`.
+`hint` finds its own project root at runtime, even when invoked through a symlink. You can place the repo anywhere and it will locate its `hint/` categories without hardcoded paths.
 
-## Contributing
+Environment overrides:
+- `HINT_ROOT`
+- `HINT_HINTDIR`
+- `HINT_CUSTOM_FILE`
+- `HINT_PLUGIN_DIRS`
 
-We ❤️ PRs. See [CONTRIBUTING.md](CONTRIBUTING.md) for the format, categories, performance/safety rules, and the PR checklist. Also check [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md) and [SECURITY.md](SECURITY.md).
+## Troubleshooting
+
+- Nothing shows? Run `hint --doctor` and verify the resolved root and `hint/` scripts count.  
+- PATH issues? Ensure `~/.local/bin` is present and reload Bash.  
+- Want a keybinding? Add your own Bash `bind -x` line manually; we don’t set one by default to avoid conflicts.
 
 ## License
 
 MIT © Kevin Ahrens
 
-## 🧑‍💻 Local Development (Option A – Recommended)
 
-Hack on **hint** and see changes instantly without reinstalling — use symlinks.
+## Continuous Integration (GitHub Actions)
 
-### 1) Clone the repo
+This repo includes CI workflows under `.github/workflows/`:
+- **lint.yml** – runs ShellCheck for Bash and markdownlint for docs
+- **build.yml** – builds `.tar.gz` and `.zip` artifacts on pushes and PRs
+- **release.yml** – on tagged releases (`vX.Y.Z`), builds and uploads artifacts
+
+Check the workflow files for details.
+
+## Releasing
+
+1. Update `VERSION` and `CHANGELOG.md`.
+2. Commit and tag:
+   ```bash
+   git add -A
+   git commit -m "release: 1.0.1"
+   git tag -a v1.0.1 -m "hint 1.0.1"
+   git push origin main --tags
+   ```
+3. GitHub Actions will build artifacts and attach them to the Release page.
+
+## Installing from GitHub Release
+
+From a release page, download the archive and then:
+
 ```bash
-mkdir -p ~/Projects
-cd ~/Projects
-git clone git@github.com:kevin4hrens/hint.git
-cd hint
-```
+# zip
+unzip hint-v1.0.1.zip -d ~/.local/share/
+~/.local/share/hint-1.0.1/scripts/install.sh
 
-### 2) Dev install (symlink mode)
-From the repo root, run:
-```bash
-./scripts/dev-install.sh
+# tar.gz
+tar -xzf hint-1.0.1.tar.gz -C ~/.local/share/
+~/.local/share/hint-1.0.1/scripts/install.sh
+
 source ~/.bashrc
+hint --doctor
 ```
-This links `hint` and `sysline` into `~/.local/bin` and appends a **dev Starship module**
-pointing directly to your working tree.
-
-Now any edits to files under `~/Projects/hint` are live in your terminal.
-
-### 3) Lint & build (optional)
-```bash
-make lint
-make build
-```
-
-To exit dev mode, remove the symlinks or reinstall normally:
-```bash
-rm -f ~/.local/bin/hint ~/.local/bin/sysline
-~/.local/share/hint/scripts/install.sh
-```
-
-## 🚀 Getting Started (2 minutes)
-
-1. **Install** (choose one):
-   - Git clone (recommended):  
-     ```bash
-     git clone https://github.com/kevin4hrens/hint ~/.local/share/hint
-     ~/.local/share/hint/scripts/install.sh
-     source ~/.bashrc
-     ```
-   - `.deb` (Ubuntu/Pop!_OS):  
-     ```bash
-     wget https://github.com/kevin4hrens/hint/releases/download/v0.4.0/hint_0.7.0_amd64.deb
-     sudo apt install ./hint_0.7.0_amd64.deb
-     ```
-   - Tarball:  
-     ```bash
-     wget https://github.com/kevin4hrens/hint/releases/download/v0.4.0/hint-0.7.0.tar.gz
-     tar -xzf hint-0.7.0.tar.gz -C ~/.local/share/
-     ~/.local/share/hint/scripts/install.sh
-     source ~/.bashrc
-     ```
-
-2. **Try it**  
-   - Type `hint` for compact tips.  
-   - Press **Ctrl-H** or run `hint i` for the interactive palette (uses `fzf` if installed).
-
-3. **Optional**: add your own hints  
-   - Create `~/.config/hint/custom.sh` and add lines like:  
-     ```bash
-     printf "SYS\tReload shell\tsource ~/.bashrc\tApply changes without opening a new terminal\n"
-     ```
-
-## 🧭 Usage guide
-
-- `hint` — shows compact category-based tips on screen.
-- `hint i` — interactive launcher: search by name, hit Enter to paste/run, Alt+Enter to copy command to clipboard (requires `xclip`).
-- Categories include: `FS, SYS, NET, DNS, PKG, GIT, DOCKER, NODE, PHP, HACK`.
-- Context awareness: some hint scripts check for files like `docker-compose.yml`, `package.json`, `composer.json`, or a Git repo to surface the most relevant commands.
-
-### Custom hints (optional)
-- File: `~/.config/hint/custom.sh` (not auto-created).  
-- Format per line (TAB-separated):  
-  `CATEGORY<TAB>LABEL<TAB>COMMAND<TAB>WHY`  
-- Examples:  
-  ```bash
-  printf "GIT\tFix author\tgit commit --amend --reset-author\tUpdate commit author\n"
-  printf "NET\tQuick ping\tping -c 4 1.1.1.1\tTest connectivity to Cloudflare\n"
-  ```
-
-## 🧑‍💻 Local Development (Option A – Recommended)
-
-If you want to hack on `hint` and see changes instantly, use the dev installer from your repo:
-
-```bash
-git clone git@github.com:kevin4hrens/hint.git ~/Projects/hint
-cd ~/Projects/hint
-./scripts/dev-install.sh
-source ~/.bashrc
-```
-
-This creates symlinks in `~/.local/bin` and appends a **dev Starship module** that points to your live working tree. Edit → test → commit with zero reinstall steps.
-
-To exit dev mode:  
-```bash
-rm -f ~/.local/bin/hint ~/.local/bin/sysline
-~/.local/share/hint/scripts/install.sh
-```
-
-## ❓ FAQ
-
-**Does this depend on Starship?**  
-Yes. `hint` integrates as a Starship custom module and uses Starship detection on startup. Install https://starship.rs first.
-
-**Do I need fzf?**  
-No, but `hint i` uses it if available for a better UI. The compact `hint` output works without it.
-
-**Where are the built-in hints?**  
-Under `~/.local/share/hint/hint/<category>/*.sh`. They’re plain shell scripts that print TAB-separated lines.
-
-**Can I use it on macOS?**  
-Yes. Use Git clone or a Homebrew Tap (packaging scaffolds included). Some Linux-only hints may not apply.
-
-## 🛠 Troubleshooting
-
-- `hint: command not found` → ensure `~/.local/bin` is on PATH (**and** restart your shell). The installer appends it to `~/.bashrc`. Verify with `echo $PATH`.
-- `bash: bind: \C-h: first non-whitespace character is not '"'` or `ash: bind`: you're not in Bash. The keybinding is Bash-only; remove the binding block from `~/.bashrc` or switch to Bash.
-- Ctrl‑H stops working as Backspace: your terminal uses ^H as erase. Use the default Alt‑h binding instead, or set `HINT_BIND_KEY="\eh"` and re-run the installer.
-
-
-- `hint: command not found` → Ensure `~/.local/bin` is on PATH. The installer appends it to `~/.bashrc`.
-- Starship line not visible → check that the `custom.sysline` block is present in `~/.config/starship.toml` and restart your terminal.
-- Clipboard not copying in interactive mode → install `xclip` or copy manually.
-- ShellCheck warnings in CI → they’re surfaced but don’t fail the build by default. Run `make lint` locally to fix them.
-
-
-### ⌨️ Keybinding (optional)
-
-By default we add an **Alt‑h** binding for Bash only (interactive shells):
-```bash
-bind -x '"\eh":"hint i"'
-```
-- Alt‑h is chosen to avoid conflicts with **Ctrl‑H** (often mapped to Backspace).
-- You can override the key by setting `HINT_BIND_KEY`, e.g. `export HINT_BIND_KEY="\C-h"` before running the installer.
-- If you use `ash`, `dash`, or `zsh`, the Bash `bind` command is not applied.
-
-To remove the binding block, delete the lines between:
-```
-# >>> hint-bind >>>
-# <<< hint-bind <<<
-```
-in your `~/.bashrc`.
-
-
-
-### 🎯 UX tips
-
-- The status line now shows **your username only** for privacy.
-- Consistent spacing and separators make it easier to scan load, RAM, disk, and battery.
-- The right-most hint reminds you: `✧ type hint` — so the action is always on-screen.
-- Prefer **Alt-h** to open the interactive palette; it won’t clash with Backspace.
-
-### 🔐 Executable permissions
-
-If you pulled from Git or copied files and executables lost their `+x` bit, fix them with:
-```bash
-./scripts/fix-perms.sh
-```
-or:
-```bash
-make fix-perms
-```
-
-
-
-## 🤖 Using AI Assistants (Copilot, ChatGPT, Cursor)
-
-Short version: **be explicit** about goals and constraints; ask for small, testable diffs.
-
-### GitHub Copilot (Chat, in repo or editor)
-- Open Copilot Chat and paste:
-  > Project: hint — Starship-only interactive command palette.  
-  > Coding rules: Bash-only for runtime; fast startup; zero network calls; safe-by-default commands; lines formatted as `CATEGORY<TAB>LABEL<TAB>COMMAND<TAB>WHY`.  
-  > Tasks: write a new hint script under `hint/<category>/...`, or refactor `bin/hint` without changing behavior.  
-  > Constraints: keep scripts idempotent and sub-100ms; use `shellcheck`-clean code; respect optional `~/.config/hint/custom.sh`.
-- Ask Copilot to draft changes **in a new branch** and propose a PR with a one-paragraph rationale.
-- Use our PR template checklist when submitting.
-
-### ChatGPT (paste-in workflow)
-When you want ChatGPT to help, provide:
-1. The **goal**, **context**, and **constraints** (same bullets as above).  
-2. The **target file contents** that should be edited.  
-3. What great looks like (e.g., “single file, pure Bash, ≤40 lines, shellcheck-clean”).
-
-Suggested starter prompt (copy/paste):
-```
-You are helping on the repo “hint” (Starship-only command palette).
-Write or modify Bash scripts that are fast and shellcheck-clean.
-Do not add network calls. Hints must print TAB-separated lines:
-CATEGORY<TAB>LABEL<TAB>COMMAND<TAB>WHY
-
-Task: <describe your task>
-Target file: <path/to/file>
-Return: full file content only, with minimal diff and comments removed.
-```
-
-### Cursor
-- Add `.cursorrules` (included) to guide Cursor’s inline edits.
-- Use “Ask Cursor” with the same goals and constraints; prefer **small edits** and **preview diffs**.
-- Keep runtime files in `bin/` and `hint/` Bash-only; heavy logic belongs in scripts under `scripts/` (not on hot path).
-
-### Quality gates (for any AI-generated change)
-- Run: `make lint` (ShellCheck), then `./scripts/fix-perms.sh`.
-- Dry run: `hint --all` and `hint i`. No errors; startup stays snappy.
-- Add/Update docs if you changed behavior.
-

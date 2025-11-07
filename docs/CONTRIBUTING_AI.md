@@ -1,13 +1,12 @@
-# Contributing with AI Assistants
+# Contributing with AI
 
-Use Copilot, ChatGPT, or Cursor to propose **small, testable** changes.
+We support AI-assisted contributions if the code remains readable and safe.
 
 ## Do
-- Keep runtime changes in Bash, fast and shellcheck-clean.
-- Add hints in the correct category under `hint/`.
-- Update docs for behavior changes.
+- Keep runtime Bash fast and ShellCheck-clean
+- Add hints in the correct category under `hint/`
+- Update docs when behavior changes
 
-## Don’t
-- Add external network calls or heavy dependencies.
-- Introduce long-running scans in `bin/hint`.
-- Bypass the PR checklist.
+## Don't
+- Add network calls or destructive commands
+- Introduce long loops or subshell storms on startup

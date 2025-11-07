@@ -1,97 +1,116 @@
-# ----------------------------------------------------------------------------
-# Copyright (c) 2025 Kevin Ahrens
-# Made with ❤️ by Kevin — and the community.
-# Licensed under the MIT License (see LICENSE).
-# ----------------------------------------------------------------------------
 #!/usr/bin/env bash
-# hint — Starship-only interactive command palette
+# hint — Starship-ready command palette (dynamic-path runtime)
+# v1.0.0 — Clean, fast, and safe by default.
 
 set -euo pipefail
 
-if ! command -v starship >/dev/null 2>&1; then
-  echo "hint: Starship is required. Install: https://starship.rs" >&2
-  exit 1
-fi
+fail() { printf "hint: %s\n" "$*" >&2; exit 1; }
+on_err() { rc=$?; printf "hint: something went wrong (exit %s). Try: hint --doctor\n" "$rc" >&2; exit "$rc"; }
+trap on_err ERR
 
-is_tty() { [[ -t 1 ]]; }
-has() { command -v "$1" >/dev/null 2>&1; }
+# Resolve runtime root based on this script's path (works via symlink)
+resolve_root() {
+  local src="${BASH_SOURCE[0]}"
+  while [ -L "$src" ]; do
+    local dir; dir="$(cd -P "$(dirname "$src")" && pwd)"
+    src="$(readlink "$src")"
+    [[ "$src" != /* ]] && src="$dir/$src"
+  done
+  local dir; dir="$(cd -P "$(dirname "$src")/.." && pwd)"
+  printf "%s\n" "$dir"
+}
+HINT_ROOT_DEFAULT="$(resolve_root)"
+HINT_ROOT="${HINT_ROOT:-$HINT_ROOT_DEFAULT}"
+HINT_HINTDIR="${HINT_HINTDIR:-$HINT_ROOT/hint}"
+HINT_CUSTOM_FILE="${HINT_CUSTOM_FILE:-$HOME/.config/hint/custom.sh}"
+HINT_PLUGIN_DIRS="${HINT_PLUGIN_DIRS:-}"
 
-bold()   { is_tty && tput bold    || true; }
-dim()    { is_tty && tput dim     || true; }
-sg()     { is_tty && tput sgr0    || true; }
-grey()   { is_tty && tput setaf 8 || true; }
-hr()     { printf "%s" "$(grey)────────────────────────────────────────────────────────$(sg)"; }
+has(){ command -v "$1" >/dev/null 2>&1; }
+is_tty(){ [[ -t 1 ]]; }
+bold(){ is_tty && tput bold || true; }
+dim(){ is_tty && tput dim || true; }
+sg(){ is_tty && tput sgr0 || true; }
+grey(){ is_tty && tput setaf 8 || true; }
+hr(){ printf "%s" "$(grey)────────────────────────────────────────────────────────$(sg)"; }
 
-HINT_DIR="${HINT_DIR:-$HOME/.local/share/hint}"
-CUSTOM_FILE="${HOME}/.config/hint/custom.sh"
-SECTIONS="${HINT_SECTIONS:-FS,SYS,NET,PKG,GIT,DOCKER,NODE,PHP,HACK,DNS}"
-
-teach_tip() {
-  tips=(
+teach_tip(){
+  local tips=(
     'Ctrl-R searches history; Arrow keys to select, Enter to run.'
     'Use `tldr <cmd>` for short, example-driven manuals.'
-    'Use ripgrep (`rg`) to search code: rg "pattern" .'
     'Use `journalctl -p 3 -xb` to see errors from this boot.'
     'Use `ss -tulpn` to list listening ports.'
     'Use `dig +trace example.com` to debug DNS.'
     'Use `sudo lsof +L1` to find deleted-but-open files eating disk.'
-    'Use `sudo dmesg -T` for kernel messages with timestamps.'
   )
-  shuf -e "${tips[@]}" -n 1 2>/dev/null || printf "%s\n" "${tips[0]}"
+  if has shuf; then shuf -e "${tips[@]}" -n 1; else printf "%s\n" "${tips[0]}"; fi
 }
 
-collect_hints() {
-  for d in general git docker node php networking hacker; do
-    for f in "${HINT_DIR}/hint/${d}/"*.sh; do
-      [[ -f "$f" ]] && bash "$f"
-    done
-  done
-  # Optional per-user hints: only load if the file exists.
-  [[ -f "$CUSTOM_FILE" ]] && bash "$CUSTOM_FILE"
+collect_from_dir(){
+  local dir="$1"; [[ -d "$dir" ]] || return 0
+  while IFS= read -r -d '' f; do bash "$f" || true; done < <(find "$dir" -type f -name '*.sh' -print0 | sort -z)
 }
 
-print_compact() {
-  local all="$1"
-  echo
-  printf "%sHINTS%s  %s(type 'hint i' for interactive)%s\n" "$(bold)" "$(sg)" "$(dim)" "$(sg)"
-  hr; echo
-  for cat in ${SECTIONS//,/ }; do
-    echo "$all" | awk -F'\t' -v k="$cat" '($1==k){print}' | head -n 10 \
-      | awk -F'\t' -v k="$cat" 'BEGIN{printf("\n[%s]\n", k)} {printf("  • %-30s %s\n", $2, $3)}'
-  done
-  echo
-  printf "%sTeach:%s %s\n" "$(bold)" "$(sg)" "$(teach_tip)"
-  echo
-  printf "%sTip:%s run hint i to search and select.\n" "$(bold)" "$(sg)"
-}
-
-fzf_menu() {
-  local list
-  list="$(mktemp)"
-  echo "$1" > "$list"
-  awk -F'\t' -v wanted="$SECTIONS" '
-    BEGIN{ split(wanted, w, ","); for(i in w) allow[w[i]]=1 }
-    {cat=$1; if(allow[cat]) print}
-  ' "$list" > "${list}.flt"
-  awk -F'\t' '{printf("[%s] %s\t%s\t— %s\n", $1,$2,$3,($4==""?"":$4))}' "${list}.flt" > "${list}.menu"
-  local out=""
-  if has fzf; then
-    out="$(FZF_DEFAULT_OPTS="--ansi --no-sort --height 90% --border --layout=reverse --with-nth=1,2 --delimiter='\t' --prompt='hint > ' --bind 'alt-enter:execute-silent(echo -n {2} | xclip -selection clipboard)+abort' --preview-window=down,8:wrap" \
-      fzf --header "Teach: $(teach_tip)" --preview "awk -F'\t' '{print \$0}' <<< {}" < "${list}.menu" \
-      | awk -F'\t' '{print $2}')"
-    [[ -n "$out" ]] && printf "%s\n" "$out"
-  else
-    print_compact "$1"
+collect_hints(){
+  # All subdirs of HINT_HINTDIR (category-agnostic), plus custom and plugins
+  [[ -d "$HINT_HINTDIR" ]] && while IFS= read -r -d '' sub; do collect_from_dir "$sub"; done < <(find "$HINT_HINTDIR" -maxdepth 1 -mindepth 1 -type d -print0 | sort -z)
+  # Plugins
+  if [[ -n "$HINT_PLUGIN_DIRS" ]]; then
+    IFS=':' read -r -a plugs <<< "$HINT_PLUGIN_DIRS"
+    for p in "${plugs[@]}"; do [[ -d "$p/hint" ]] && while IFS= read -r -d '' sub; do collect_from_dir "$sub"; done < <(find "$p/hint" -maxdepth 1 -mindepth 1 -type d -print0 | sort -z); done
   fi
-  rm -f "$list" "${list}.flt" "${list}.menu"
+  # Custom
+  [[ -f "$HINT_CUSTOM_FILE" ]] && bash "$HINT_CUSTOM_FILE" || true
 }
 
-main() {
-  ALL="$(collect_hints)"
-  case "${1:-}" in
-    i|interactive) fzf_menu "$ALL" ;;
-    --all) print_compact "$ALL" ;;
-    *) print_compact "$ALL" ;;
-  esac
+print_compact(){
+  local all="$1"
+  echo; printf "%sHINTS%s  %s(type 'hint i' for interactive)%s\n" "$(bold)" "$(sg)" "$(dim)" "$(sg)"
+  hr; echo
+  echo "$all" | awk -F'\t' '{
+    cat=$1; label=$2; cmd=$3; why=$4;
+    gsub(/\r/,"",cat); gsub(/\r/,"",label); gsub(/\r/,"",cmd); gsub(/\r/,"",why);
+    if (!seen[cat]++) { order[++n]=cat }
+    lines[cat]=lines[cat] sprintf("  • %-30s %s\n", label, cmd)
+  } END { for (i=1;i<=n;i++){ c=order[i]; printf("\n[%s]\n%s", c, lines[c]) } }'
+  echo; printf "%sTeach:%s %s\n" "$(bold)" "$(sg)" "$(teach_tip)"; echo
 }
-main "$@"
+
+fzf_menu(){
+  local all="$1"; local menu
+  menu="$(echo "$all" | awk -F'\t' '{printf("[%s] %s\t%s\t— %s\n",$1,$2,$3,($4==""?"":$4))}')"
+  if has fzf; then
+    echo "$menu" | FZF_DEFAULT_OPTS="--ansi --no-sort --height 90% --border --layout=reverse --with-nth=1,2 --delimiter='\t' --prompt='hint > '" \
+      fzf --header "Teach: $(teach_tip)" --preview "awk -F'\t' '{print \$0}' <<< {}" | awk -F'\t' '{print $2}'
+  else
+    print_compact "$all"
+  fi
+}
+
+doctor(){
+  printf "hint doctor — inspecting environment\n"
+  case ":$PATH:" in *":$HOME/.local/bin:"*) echo "✅ PATH has ~/.local/bin" ;; *)
+    echo "⚠️  PATH missing ~/.local/bin — add: export PATH=\"\$HOME/.local/bin:\$PATH\" to ~/.bashrc" ;; esac
+  if has starship; then echo "✅ starship present"; else echo "⚠️  starship not found (optional for sysline)"; fi
+  if command -v hint >/dev/null 2>&1; then echo "✅ hint in PATH: $(command -v hint)"; else echo "❌ hint not on PATH"; fi
+  echo "HINT_ROOT: $HINT_ROOT"
+  echo "HINT_HINTDIR: $HINT_HINTDIR"
+  echo "HINT_CUSTOM_FILE: $HINT_CUSTOM_FILE (exists: $( [[ -f "$HINT_CUSTOM_FILE" ]] && echo yes || echo no ))"
+  local cnt=0; while IFS= read -r -d '' f; do cnt=$((cnt+1)); done < <(find "$HINT_HINTDIR" -type f -name '*.sh' -print0 2>/dev/null || true)
+  echo "Found $cnt hint scripts under $HINT_HINTDIR"
+}
+
+debug_dump(){
+  echo "DEBUG:"
+  echo "  SHELL     = ${SHELL:-}"
+  echo "  HINT_ROOT = ${HINT_ROOT}"
+  echo "  HINT_HINTDIR = ${HINT_HINTDIR}"
+  echo "  CUSTOM    = ${HINT_CUSTOM_FILE} (exists: $( [[ -f "$HINT_CUSTOM_FILE" ]] && echo yes || echo no ))"
+}
+
+case "${1:-}" in
+  --doctor) doctor ;;
+  --debug) debug_dump ;;
+  i|interactive) ALL="$(collect_hints)"; fzf_menu "$ALL" ;;
+  --all|"") ALL="$(collect_hints)"; print_compact "$ALL" ;;
+  *) echo "hint: unknown option '$1'"; echo "usage: hint [i|--all|--doctor|--debug]"; exit 2 ;;
+esac

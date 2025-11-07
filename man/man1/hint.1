@@ -1,0 +1,39 @@
+.TH hint 1 "November 2025" "hint 1.0.0"
+.SH NAME
+hint \- fast, Starship-ready command palette for the terminal
+.SH SYNOPSIS
+.B hint
+.RI [ i | --all | --doctor | --debug ]
+.SH DESCRIPTION
+.B hint
+prints short, practical command hints grouped by category. It integrates with the
+Starship prompt via a small module (\fBsysline\fR) that shows username, load, RAM,
+disk and battery status.
+
+Interactive mode
+(\fBhint i\fR) uses \fBfzf\fR if available; press Enter to paste/execute
+the selected command.
+
+.SH FILES
+.TP
+~/.config/hint/custom.sh
+Optional per-user hints. Each line must be TAB-separated:
+\fICATEGORY\fR\t\fILABEL\fR\t\fICOMMAND\fR\t\fIWHY\fR
+
+.SH ENVIRONMENT
+.TP
+.B HINT_ROOT
+Override the detected project root.
+.TP
+.B HINT_HINTDIR
+Override the path to the \fIhint/\fR categories directory.
+.TP
+.B HINT_CUSTOM_FILE
+Change the per-user custom hints file (default: ~/.config/hint/custom.sh).
+.TP
+.B HINT_PLUGIN_DIRS
+Colon-separated list of extra roots that include hint/ folders.
+
+.SH SEE ALSO
+.BR fzf (1), 
+.BR starship (1)

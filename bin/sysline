@@ -1,17 +1,6 @@
-# ----------------------------------------------------------------------------
-# Copyright (c) 2025 Kevin Ahrens
-# Made with ❤️ by Kevin — and the community.
-# Licensed under the MIT License (see LICENSE).
-# ----------------------------------------------------------------------------
 #!/usr/bin/env bash
 set -euo pipefail
-command -v starship >/dev/null 2>&1 || exit 0
-load="$(cut -d ' ' -f1 < /proc/loadavg 2>/dev/null || echo '?')"
-ram_line="$(free -h | awk '/Mem:/ {print $3 "/" $2}' 2>/dev/null)"
-disk_pct="$(df -h . 2>/dev/null | awk 'NR==2{print $5}')"
-bat_pct=""; for b in /sys/class/power_supply/BAT*/capacity; do [[ -r "$b" ]] && bat_pct="$(cat "$b")%" && break; done
-[[ -n "${bat_pct}" ]] && out="${out}  |  🔋 ${bat_pct}"
-out="${out}  |  💡 type hint"
+
 user="$(whoami 2>/dev/null || echo user)"
 load="$(cut -d ' ' -f1 < /proc/loadavg 2>/dev/null || echo '?')"
 ram_line="$(free -h 2>/dev/null | awk '/Mem:/ {print $3 "/" $2}')"
@@ -22,4 +11,4 @@ sep="  |  "
 out="👤 ${user}${sep}🖥 load ${load}${sep}🧠 RAM ${ram_line}${sep}💽 ${disk_pct}"
 [[ -n "${bat_pct}" ]] && out="${out}${sep}🔋 ${bat_pct}"
 out="${out}${sep}✧ type hint"
-printf "%s\n" "$out"
+printf "%s\n" "$out" || true

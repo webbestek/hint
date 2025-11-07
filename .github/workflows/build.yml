@@ -1,27 +1,25 @@
-name: Release
+name: Build
 
 on:
   push:
-    tags:
-      - 'v*.*.*'
+  pull_request:
 
 jobs:
-  release:
+  build:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Build packages
+      - name: Create artifacts
         run: |
           set -eux
           VERSION="$(cat VERSION | tr -d '\n')"
           mkdir -p dist
+          # zip
           zip -r "dist/hint-v${VERSION}.zip" . -x "dist/*" -x ".git/*"
+          # tar.gz
           tar -czf "dist/hint-${VERSION}.tar.gz" --exclude=dist --exclude=.git .
-      - name: Upload release artifacts
-        uses: softprops/action-gh-release@v2
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
         with:
-          files: |
-            dist/hint-v*.zip
-            dist/hint-*.tar.gz
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          name: hint-artifacts
+          path: dist/*
