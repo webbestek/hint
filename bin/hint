@@ -150,7 +150,11 @@ print_compact(){
   hr; echo
   echo "$all" | awk -F'	' '{
     cat=$1; label=$2; cmd=$3; why=$4;
-    gsub(//,"",cat); gsub(//,"",label); gsub(//,"",cmd); gsub(//,"",why);
+    gsub(/
+/,"",cat); gsub(/
+/,"",label); gsub(/
+/,"",cmd); gsub(/
+/,"",why);
     if (!seen[cat]++) { order[++n]=cat }
     lines[cat]=lines[cat] sprintf("%s  • %-28s%s  %s%s%s
 ", "", label, "", cmd, (why? "  — ":""), why)
@@ -177,7 +181,11 @@ print_beginner(){
   hr; echo
   echo "$all" | awk -F'	' '{
     cat=$1; label=$2; cmd=$3; why=$4;
-    gsub(//,"",cat); gsub(//,"",label); gsub(//,"",cmd); gsub(//,"",why);
+    gsub(/
+/,"",cat); gsub(/
+/,"",label); gsub(/
+/,"",cmd); gsub(/
+/,"",why);
     if (!seen[cat]++) { order[++n]=cat }
     block[cat]=block[cat] \
       sprintf("

@@ -22,7 +22,8 @@
 - FZF preview (unchanged) complements the friendlier display; insert-binding still optional.
 - Docs: README updated to include Beginner mode.
 
-## 1.2.1 — 2025-11-07
-- SonarCloud: added `sonar.yml` workflow to analyze `development` branch and PRs.
-- Added `sonar-project.properties` (project key `webbestek_hint`, org `webbestek`).
-- README: SonarCloud badges and setup notes.
+## 1.2.2 — 2025-11-07
+- Fix: removed risky ANSI escapes from awk; colors now emitted by Bash wrappers (no more "runaway string" errors).
+- Fix: all hint scripts now use `printf '%s\n' "..."` so percent signs in commands (e.g., `%CPU`) no longer break printing.
+- Fix: `ai/core.sh` rewritten with safe one-liners (no here-docs/backticks).
+- UI: kept colorful headers and beginner-friendly layout without awk dependencies.
