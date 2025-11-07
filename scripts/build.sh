@@ -17,7 +17,7 @@ if command -v fpm >/dev/null 2>&1; then
   WORK="$DIST/pkgroot"
   rm -rf "$WORK"
   mkdir -p "$WORK/usr/local/share/hint" "$WORK/usr/local/bin"
-  cp -r "$ROOT/bin" "$ROOT/hint" "$ROOT/starship" "$ROOT/config" "$ROOT/scripts" "$WORK/usr/local/share/hint/"
+  cp -r "$ROOT/bin" "$ROOT/hint" "$ROOT/starship" "$ROOT/config" "$ROOT/scripts" "$ROOT/man" "$WORK/usr/local/share/hint/"
   ln -sf ../share/hint/bin/hint "$WORK/usr/local/bin/hint"
   ln -sf ../share/hint/bin/sysline "$WORK/usr/local/bin/sysline"
   pushd "$WORK" >/dev/null

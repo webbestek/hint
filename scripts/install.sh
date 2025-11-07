@@ -25,7 +25,14 @@ ln -sf "$HINT_DST/bin/hint" "$HOME/.local/bin/hint"
 ln -sf "$HINT_DST/bin/sysline" "$HOME/.local/bin/sysline"
 
 if ! grep -q 'export PATH="$HOME/.local/bin:$PATH"' "$HOME/.bashrc" 2>/dev/null; then
+  if ! grep -q '^export PATH="$HOME/.local/bin:$PATH"$' "$HOME/.bashrc" 2>/dev/null; then
+  
+if ! grep -qx 'export PATH="$HOME/.local/bin:$PATH"' "$HOME/.bashrc" 2>/dev/null; then
+  if ! grep -qx 'export PATH="$HOME/.local/bin:$PATH"' "$HOME/.bashrc" 2>/dev/null; then
   echo 'export PATH="$HOME/.local/bin:$PATH"' >> "$HOME/.bashrc"
+fi
+fi
+fi
 fi
 
 # Do NOT auto-create ~/.config/hint/custom.sh; it's optional by design.
@@ -44,8 +51,7 @@ echo "✅ hint installed to $HINT_DST"
 echo "→ Reload shell: source ~/.bashrc"
 
 # Add optional keybinding for bash (Alt-h by default). Set HINT_BIND_KEY to override (e.g., "\C-h").
-BASH_BIND_MARK_BEGIN="# >>> hint-bind >>>"
-BASH_BIND_MARK_END="# <<< hint-bind <<<"
+BASH_BIND_MARK_BEGIN=""
 if [[ -n "${BASH_VERSION:-}" && "$-" == *i* ]]; then
   key="${HINT_BIND_KEY:-\\eh}"   # \\eh = Alt-h; safer than Ctrl-H (backspace)
   if ! grep -q "$BASH_BIND_MARK_BEGIN" "$HOME/.bashrc" 2>/dev/null; then
@@ -56,3 +62,12 @@ if [[ -n "${BASH_VERSION:-}" && "$-" == *i* ]]; then
     } >> "$HOME/.bashrc"
   fi
 fi
+
+
+
+
+
+# Optional: enable local man page (user scope)
+# symlink man page to ~/.local/share/man/man1
+mkdir -p "$HOME/.local/share/man/man1"
+ln -sf "$HINT_DST/man/man1/hint.1" "$HOME/.local/share/man/man1/hint.1" 2>/dev/null || true
